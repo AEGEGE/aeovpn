@@ -1,0 +1,31 @@
+[Unit]
+Description=Docker Application Container Engine
+After=network.target
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+mountflags=shared
+Type=notify
+ExecStartPost=/sbin/iptables -t nat -A POSTROUTING -s 11.111.0.0/16 -j MASQUERADE
+ExecStart=/usr/bin/dockerd --config-file=/etc/docker/daemon.json
+ExecReload=/bin/kill -s HUP 
+ExecStartPre=/bin/rm -f /var/run/docker.pid
+ExecStartPost=/sbin/iptables -I FORWARD -s 0.0.0.0/0 -j ACCEPT
+ExecStopPost=/sbin/iptables -t nat -D POSTROUTING -s 11.111.0.0/16 -j MASQUERADE
+LimitNOFILE=1048576
+LimitNPROC=1048576
+LimitCORE=infinity
+#TasksMax=infinity
+TimeoutStartSec=0
+Delegate=yes
+# kill only the docker process, not all processes in the cgroup
+KillMode=process
+# restart the docker process if it exits prematurely
+
+Restart=on-failure
+StartLimitBurst=3
+StartLimitInterval=60s
+
+[Install]
+WantedBy=multi-user.target

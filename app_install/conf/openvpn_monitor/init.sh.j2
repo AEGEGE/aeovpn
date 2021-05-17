@@ -1,0 +1,30 @@
+#!/bin/bash
+  cd `dirname $0`
+  docker info >/dev/nul 2>&1
+  if [ "$?" != "0" ]
+  then
+    echo start dockerd
+    systemctl start docker
+  sleep 1
+  fi
+  sleep 1
+  docker inspect openvpn-monitor >/dev/nul 2>&1
+  if [ "$?" != "0" ]
+  then
+    docker load -i {{work_dir}}/openvpn-monitor.tgz
+    docker run -d --restart=always --name openvpn-monitor --link openvpn-ldap \
+        --ulimit nofile=65536:65536 \
+        -e OPENVPNMONITOR_DEFAULT_DATETIMEFORMAT="{{ OPENVPNMONITOR_DEFAULT_DATETIMEFORMAT }}" \
+        -e OPENVPNMONITOR_DEFAULT_LATITUDE=-"{{ OPENVPNMONITOR_DEFAULT_LATITUDE }}" \
+        -e OPENVPNMONITOR_DEFAULT_LONGITUDE="{{ OPENVPNMONITOR_DEFAULT_LONGITUDE }}" \
+        -e OPENVPNMONITOR_DEFAULT_MAPS="{{ OPENVPNMONITOR_DEFAULT_MAPS }}" \
+        -e OPENVPNMONITOR_DEFAULT_SITE="{{ OPENVPNMONITOR_DEFAULT_SITE }}" \
+        -e OPENVPNMONITOR_SITES_1_SHOWDISCONNECT="{{ OPENVPNMONITOR_SITES_1_SHOWDISCONNECT }}" \
+        -e OPENVPNMONITOR_SITES_1_ALIAS="{{ OPENVPNMONITOR_SITES_1_ALIAS }}" \
+        -e OPENVPNMONITOR_SITES_1_HOST="{{ OPENVPNMONITOR_SITES_1_HOST }}" \
+        -e OPENVPNMONITOR_SITES_1_NAME="{{ OPENVPNMONITOR_SITES_1_NAME }}" \
+        -e OPENVPNMONITOR_SITES_1_PORT="{{ OPENVPNMONITOR_SITES_1_PORT }}" \
+        -p "{{ OPENVPNMONITOR_PORT }}":80 \
+        -v "/etc/localtime":/etc/localtime:ro \
+        c31f90ffb6fc
+  fi

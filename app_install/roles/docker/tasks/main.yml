@@ -1,0 +1,90 @@
+- name: check rsync
+  shell: command -v rsync >/dev/null 2>&1
+  register: rsync_check
+  failed_when: "'command rsync not found' in rsync_check.stderr"
+
+- name: check screen
+  shell: command -v screen >/dev/null 2>&1
+  register: screen_check
+  failed_when: "'command rsync not found' in screen_check.stderr"
+
+- name: bash rsync init
+  when: rsync_check.rc != 0
+  copy:
+    src: "{{base_dir}}/../pkg/bin/{{item}}"
+    dest: "/usr/bin/{{item}}"
+    force: no
+    mode: 0755
+  with_items:
+  - rsync
+
+- name: bash sreen init
+  when: screen_check.rc != 0
+  copy:
+    src: "{{base_dir}}/../pkg/bin/{{item}}"
+    dest: "/usr/bin/{{item}}"
+    force: no
+    mode: 0755
+  with_items:
+  - screen
+
+- name: check docker
+  shell: command -v dockerd >/dev/null 2>&1
+  register: docker_install
+  failed_when: "'command not found' in docker_install.stderr"
+
+- name: check docker-compose
+  shell: command -v docker-compose >/dev/null 2>&1
+  register: docker_compose_install
+  failed_when: "'command not found' in docker_compose_install.stderr"
+
+- name: docker binary
+  when: docker_install.rc != 0
+  unarchive:
+    src: "{{base_dir}}/../docker_common/docker.tgz"
+    dest: /usr/bin/
+
+- name: check docker system
+  shell: systemctl status docker >/dev/null 2>&1
+  register: docker_system
+  failed_when: "'command not found' in docker_system.stderr"
+
+- name: Check that the daemon.json exists
+  shell: cat /etc/docker/daemon.json >/dev/null 2>&1
+  register: docker_daemon_status
+  failed_when: "'No such file or directory' in docker_daemon_status.stderr"
+  
+- name: create docker config dir
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+  - "/etc/docker"
+
+- name: create docker daemon.json
+  when: docker_install.rc != 0 and docker_system.rc != 0 or docker_daemon_status.rc != 0
+  template:
+    dest: "/etc/docker/daemon.json"
+    src: "{{base_dir}}/../docker_common/daemon.json.j2"
+
+- name: create systemd service docker
+  when: docker_install.rc != 0 and docker_system != 0
+  template:
+    dest: "/etc/systemd/system/docker.service"
+    src: "{{base_dir}}/../docker_common/docker.service.j2"
+
+- name: reload docker systemd
+  when: docker_install.rc != 0 and docker_system != 0
+  systemd:
+    daemon_reload: yes
+    enabled: true
+    state: restarted
+    name: 'docker'
+
+- name: reload docker systemd
+  when: docker_compose_install.rc != 0
+  copy:
+    dest: "/usr/local/bin/"
+    src: "{{base_dir}}/../docker_common/docker-compose"
+    mode: 0755

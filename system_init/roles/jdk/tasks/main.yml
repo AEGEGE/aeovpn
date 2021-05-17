@@ -1,0 +1,25 @@
+- name: prepare work's dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+  - "{{work_dir}}"
+  - "{{work_dir}}/apps"
+
+- name: Send and unzip tgz
+  unarchive:
+    dest: "{{work_dir}}/apps"
+    src: "{{pkg_dir}}/{{item}}"
+  with_items:
+  - "jdk.tgz"
+
+- name: export jdk HOME PATH
+  lineinfile: dest=/etc/profile  regexp="^JAVA_HOME=" line="JAVA_HOME=/data/apps/jdk/"
+  become: yes
+  become_method: sudo
+
+- name: export jdk BIN PATH
+  lineinfile: dest=/etc/profile  regexp="^PATH=\$JAVA_HOME/bin" line="PATH=$JAVA_HOME/bin:$PATH"
+  become: yes
+  become_method: sudo

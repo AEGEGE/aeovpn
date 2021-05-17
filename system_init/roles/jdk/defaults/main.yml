@@ -1,0 +1,4 @@
+service_name: jdk
+pkg_dir: "{{base_dir}}/../pkg"
+work_dir: "/data"
+conf_dir: "{{base_dir}}/conf/{{service_name}}"

@@ -1,0 +1,66 @@
+- name: "create user"
+  user: 
+    name: "{{customuser}}"
+    password: "{{ userpassword | password_hash('sha512') }}"  
+    uid: 1060
+    groups: root
+    append: yes
+  
+- name: "check ssh key"
+  stat:
+    path: "{{docker_basedir}}/id_rsa"
+  register: ssh_file
+  delegate_to: localhost
+  run_once: true
+
+- name: "check ssh key"
+  stat:
+    path: "{{docker_basedir}}/system_init/id_rsa"
+  register: ssh_custom_file
+  delegate_to: localhost
+  run_once: true
+
+- name: "ssh gen key"
+  when: ssh_file.stat.exists == False
+  shell: 'ssh-keygen -b 2048 -t rsa -q -N "" -f {{docker_basedir}}/id_rsa'
+  delegate_to: localhost
+  run_once: true
+
+- name: "ssh gen custom key"
+  when: ssh_custom_file.stat.exists == False
+  shell: 'ssh-keygen -b 2048 -t rsa -q -N "" -f {{docker_basedir}}/system_init/id_rsa'
+  delegate_to: localhost
+  run_once: true
+
+- name: "ssh copy key"
+  shell: 'cp -f {{docker_basedir}}/id_rsa {{ansible_ssh_private_key_file}} && chmod 0600 {{ansible_ssh_private_key_file}}'
+  delegate_to: localhost
+  run_once: true
+
+- name: "ssh copy pub key"
+  shell: 'cp -f {{docker_basedir}}/id_rsa.pub {{ansible_ssh_private_key_file}}.pub && chmod 0600 {{ansible_ssh_private_key_file}}.pub'
+  delegate_to: localhost
+  run_once: true
+
+- name: download key
+  copy: 
+    src: "{{docker_basedir}}/system_init/id_rsa"
+    dest: "/home/{{customuser}}/.ssh/"
+    mode: 0600
+    owner: "{{customuser}}"
+    group: "{{customuser}}"
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+
+- name: push ssh pub key
+  when: push_ssh_key
+  authorized_key:
+    user: "{{customuser}}"
+    key: "{{ lookup('file', '{{ansible_ssh_private_key_file}}.pub') }}"
+
+
+- name: push customuser ssh pub key
+  when: push_ssh_key
+  authorized_key:
+    user: "{{customuser}}"
+    key: "{{ lookup('file', '{{docker_basedir}}/system_init/id_rsa.pub') }}"

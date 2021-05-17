@@ -1,0 +1,3 @@
+# es
+elasticsearch_hosts_array: "{{groups['elasticsearch']|d([])}}"
+ip_aaaa: "{{(inventory_hostname)|d(.)}}"

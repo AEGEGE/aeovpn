@@ -1,0 +1,20 @@
+- name: prepare work's dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+  - "/data"
+  - "/data/bak"
+  - "/data/logs"
+  - "/data/agents"
+
+- include_tasks: sysctl.yml
+
+- include_tasks: limit.yml
+
+- include_tasks: install.yml
+
+- include_tasks: ntpdate.yml
+
+- include_tasks: system.yml

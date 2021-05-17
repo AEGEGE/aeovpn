@@ -1,0 +1,7 @@
+- hosts: openldap
+  gather_facts: no
+  vars:
+    ansible_ssh_pass: "{{server_password}}"
+  roles:
+  - docker
+  - ldap

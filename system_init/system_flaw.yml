@@ -1,0 +1,6 @@
+- hosts: 'web_server'
+  gather_facts: no
+  vars:
+    ansible_ssh_pass: "{{server_password}}"
+  roles:
+  - system_flaw

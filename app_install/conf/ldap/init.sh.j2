@@ -1,0 +1,41 @@
+#!/bin/bash
+  cd `dirname $0`
+  docker info >/dev/nul 2>&1
+  if [ "$?" != "0" ]
+  then
+    echo start dockerd
+    systemctl start docker
+  sleep 1
+  fi
+  sleep 1
+  docker inspect openldap >/dev/nul 2>&1
+  if [ "$?" != "0" ]
+  then
+    docker load -i {{work_dir}}/openldap.tgz
+    docker run -d --restart=always --name openldap \
+        --ulimit nofile=65536:65536 \
+        -v "/etc/localtime":/etc/localtime:ro \
+        -v "{{ work_dir }}/ldap":/var/lib/ldap:rw \
+        -v "{{ work_dir }}/slapd.d":/etc/ldap/slapd.d:rw \
+        -e "LDAP_LOG_LEVEL=256" \
+        -e "LDAP_ORGANISATION={{ LDAP_ORGANISATION }}" \
+        -e "LDAP_DOMAIN={{ LDAP_DOMAIN }}" \
+        -e "LDAP_ADMIN_PASSWORD={{ LDAP_ADMIN_PASSWORD }}" \
+        -e "LDAP_BACKEND={{ LDAP_BACKEND }}" \
+        -p 389:389 \
+        -p 636:636 \
+        faac9bb59f83
+  fi
+  sleep 1
+  docker inspect phpldapadmin >/dev/nul 2>&1
+  if [ "$?" != "0" ]
+  then
+    docker load -i {{work_dir}}/phpldapadmin.tgz
+    docker run -d --restart=always --name phpldapadmin \
+        --ulimit nofile=65536:65536 \
+        -v "/etc/localtime":/etc/localtime:ro \
+        -e "PHPLDAPADMIN_LDAP_HOSTS={{inventory_hostname}}" \
+        -e "PHPLDAPADMIN_HTTPS=false" \
+        -p 8080:80 \
+        e340e61b03c4
+  fi

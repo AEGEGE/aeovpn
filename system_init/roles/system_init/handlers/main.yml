@@ -1,0 +1,21 @@
+- name: Restart rsyslog service
+  service:
+    name: rsyslog
+    state: restarted
+
+- name: Restart network service
+  service:
+    name: network
+    state: restarted
+    enabled: yes
+
+- name: Restart networking service
+  service:
+    name: networking
+    state: restarted
+    enabled: yes
+
+- name: Clean 20-nproc.conf
+  file:
+    path: /etc/security/limits.d/20-nproc.conf
+    state: absent

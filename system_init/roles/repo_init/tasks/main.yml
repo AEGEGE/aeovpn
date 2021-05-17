@@ -1,0 +1,11 @@
+- name: Copy Centos base repo configuration.
+  template:
+    src: CentOS-Base.repo.j2
+    dest: "/etc/yum.repos.d/CentOS-Base.repo"
+    mode: 0644
+
+- name: Copy epel repo configuration.
+  template:
+    src: epel.repo.j2
+    dest: "/etc/yum.repos.d/epel.repo"
+    mode: 0644
