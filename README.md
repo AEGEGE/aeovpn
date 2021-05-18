@@ -27,6 +27,7 @@ pkg&emsp;&emsp;Directory of all installation packages<br/>
 
 ### wget pkg
 Download the ovpn_pkg.tgz package from the data center through the network disk, put it in the pkg/ directory of the root path, and execute: mv ovpn_pkg.tgz aeovpn/pkg/ && tar -zxf ovpn_pkg.tgz
+PKG_URL:http://file.mail.10086.cn/share2/fileexpress/filedownload.htm?sendid=31621213701126104217278251885415
 
 ### The main configuration file
 ```
@@ -65,7 +66,7 @@ ntp_server=ntp1.aliyun.com
 #Set hostname area
 region=bj
 #Set the hostname item
-organization=yjtc
+organization=test
 
 #docker
 #docker's home directory
@@ -81,7 +82,7 @@ NET_MASQUERADE=11.111.0.0/16
 
 #users
 #Create a normal user
-customuser=bmsk
+customuser=ae
 #Create normal user password
 userpassword="OgnGpjpwScgjeO3J"
 

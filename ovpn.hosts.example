@@ -26,7 +26,7 @@ ntp_server=ntp1.aliyun.com
 
 # hostname
 region=bj
-organization=yjtc
+organization=test
 
 #docker
 #docker的家目录
