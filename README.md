@@ -93,7 +93,7 @@ LDAP_ADMIN_PASSWORD=123456
 LDAP_BACKEND=mdb
 
 #openvpn-ldap
-openldap_host={{groups['consul'][0]}}
+openldap_host={{groups['openldap'][0]}}
 OVPN_PORT=1194
 OVPN_PROTOCOL=tcp
 #NAT OR ROUTE
