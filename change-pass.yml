@@ -1,0 +1,11 @@
+- hosts: all
+  gather_facts: no
+  remote_user: root
+  vars:
+    ansible_ssh_pass: "{{server_password}}"
+  tasks:
+  - name: change user passwd
+    user: name={{ item.user }} password={{ item.password | password_hash('sha512') }}  update_password=always
+    with_items:
+    - { user: 'root', password: 'BMsoft@2023#$1' }
+    - { user: 'guest', password: 'sdfasdf888%&2' }

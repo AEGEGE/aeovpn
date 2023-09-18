@@ -1,0 +1,4 @@
+service_name: "{{name_prefix}}-test"
+pkg_dir: "{{base_dir}}/../pkg"
+conf_dir: "{{base_dir}}/conf/test"
+work_dir: "{{install_path}}/{{service_name}}"

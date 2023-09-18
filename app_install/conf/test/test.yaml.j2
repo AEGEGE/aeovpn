@@ -1,0 +1,6 @@
+{{k8smaster_ip_list}}
+
+{{harbor_vip | replace('\n$', '')}} hub.{{image_registryDomain}} notary.{{image_registryDomain}}
+{{ traefik_ip | replace('\n', '') }}
+
+{{ hosts_registry }}

@@ -3,21 +3,50 @@
 - name: enable br_netfilter
   shell: modprobe br_netfilter
 
+- name: enable ip_conntrack
+  shell: modprobe ip_conntrack
+
+- name: create ip_conntrack
+  lineinfile:
+    dest: /etc/sysconfig/modules/br_netfilter.modules
+    regexp: "^modprobe ip_conntrack"
+    line: "modprobe ip_conntrack"
+    mode: 0755
+    create: true
+
 - name: create br_netfilter.modules
   lineinfile:
     dest: /etc/sysconfig/modules/br_netfilter.modules
-    regexp: "^modprobe"
+    regexp: "^modprobe br_netfilter"
     line: "modprobe br_netfilter"
     mode: 0755
     create: true
 
 - name: enable br_netfilter forever
   lineinfile:
-    dest: /etc/rc.sysinit
+    dest: /etc/rc.d/rc.local
+    regexp: "^#!/bin/bash"
+    line: "#!/bin/bash"
+    mode: 0755
+    create: true
+
+- name: Create symlink from /etc/rc.d/rc.local to /etc/rc.local
+  file:
+    src: /etc/rc.d/rc.local
+    dest: /etc/rc.local
+    state: link
+    
+
+- name: enable br_netfilter forever
+  lineinfile:
+    dest: /etc/rc.d/rc.local
     regexp: "^for"
     line: "for file in /etc/sysconfig/modules/*.modules ; do [ -x $file ] && $file; done"
     mode: 0755
     create: true
+
+- name: source /etc/rc.d/rc.local
+  shell: "sh /etc/rc.d/rc.local"
 
 - name: Setup sysctl
   sysctl:
@@ -25,15 +54,17 @@
     value: '{{ item.value }}'
     ignoreerrors: yes
     reload: yes
+    sysctl_file: /etc/sysctl.conf
   with_items:
   - {name: net.bridge.bridge-nf-call-ip6tables, value: 1}
   - {name: net.bridge.bridge-nf-call-iptables, value: 1}
   - {name: net.ipv4.ip_forward, value: 1}
-  - {name: net.ipv4.ip_local_port_range, value: 10300 65535}
+  - {name: net.ipv4.ip_local_port_range, value: 1024 65535}
+  - {name: net.ipv4.ip_local_reserved_ports, value: 30000-32767}
   - {name: kernel.shmall, value: 4294967296}
-  - {name: net.ipv4.tcp_fin_timeout, value: 10}
+  - {name: net.ipv4.tcp_fin_timeout, value: 30}
   - {name: net.ipv4.tcp_timestamps, value: 0}
-  - {name: net.ipv4.tcp_keepalive_time, value: 1800}
+  - {name: net.ipv4.tcp_keepalive_time, value: 3600}
   - {name: net.core.wmem_default, value: 8388608}
   - {name: net.core.rmem_default, value: 8388608}
   - {name: net.core.rmem_max, value: 16777216}
@@ -45,51 +76,13 @@
   - {name: net.ipv4.tcp_keepalive_probes, value: 2}
   - {name: net.ipv4.tcp_keepalive_intvl, value: 1}
   - {name: fs.file-max, value: 6553560}
+  - {name: fs.nr_open, value: 6553560}
   - {name: net.core.somaxconn, value: 10000}
-  - {name: net.netfilter.nf_conntrack_max, value: 1048576}
-  - {name: net.nf_conntrack_max, value: 1048576}
+  - {name: net.netfilter.nf_conntrack_max, value: 10485760}
+  - {name: net.nf_conntrack_max, value: 10485760}
+  - {name: net.netfilter.nf_conntrack_tcp_timeout_established, value: 300}
+  - {name: net.core.netdev_max_backlog, value: 10000}
   - {name: net.ipv4.neigh.default.gc_thresh1, value: 2048}
   - {name: net.ipv4.neigh.default.gc_thresh2, value: 4096}
   - {name: net.ipv4.neigh.default.gc_thresh3, value: 8192}
   - {name: vm.swappiness, value: 0}
-
-- name: set selinux to disabled
-  selinux:
-    policy: targeted
-    state: disabled 
-  become: yes
-  ignore_errors: yes
-
-- name: Disable firewalld
-  service:
-    name: "{{ item }}"
-    state: stopped
-    enabled: no
-  with_items:
-    - NetworkManager
-    - firewalld
-  ignore_errors: yes
-
-- name: network on
-  shell: "/sbin/chkconfig network on"
-
-- name: UseDNS no
-  lineinfile:
-    dest: /etc/ssh/sshd_config
-    regexp: "^UseDNS no"
-    line: "UseDNS no"
-  become: yes
-
-- name: restart sshd
-  service:
-    name: sshd
-    state: restarted
-  become: yes
-
-- name: stopped ntpd
-  service:
-    name: ntpd
-    state: stopped
-    enable: no
-  become: yes
-  ignore_errors: yes

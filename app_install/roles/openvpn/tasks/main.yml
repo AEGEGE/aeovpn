@@ -5,6 +5,7 @@
     mode: 0755
   with_items:
   - "{{ work_dir }}"
+  when: install_type == "install"
 
 - name: Send and unzip tgz
   copy:
@@ -12,11 +13,23 @@
     src: "{{pkg_dir}}/{{item}}"
   with_items:
   - "openvpn-ldap.tgz"
+  when: install_type == "install"
 
 - name: send start template j2
   template:
     dest: "{{work_dir}}/init.sh"
     src: "{{conf_dir}}/init.sh.j2"
+  when: install_type == "install"
 
 - name: "start"
   shell: "bash {{work_dir}}/init.sh"
+  when: install_type == "install"
+
+- name: "del container"
+  shell: "docker rm -f openvpn-ldap"
+  when: install_type == "delete"
+
+- name: clean all data
+  shell: "rm -rf {{ work_dir }}"
+  ignore_errors: true
+  when: install_type == "delete"

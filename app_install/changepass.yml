@@ -1,0 +1,7 @@
+- hosts: openvpn
+  gather_facts: yes
+  vars:
+    ansible_ssh_pass: "{{server_password}}"
+    install_type: "{{ ins }}"
+  roles:
+  - changepass

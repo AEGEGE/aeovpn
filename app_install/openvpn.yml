@@ -2,6 +2,6 @@
   gather_facts: no
   vars:
     ansible_ssh_pass: "{{server_password}}"
+    install_type: "{{ ins }}"
   roles:
-  - docker
   - openvpn

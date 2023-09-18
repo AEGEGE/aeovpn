@@ -25,11 +25,11 @@
     "{{registry_mirrors}}"
   ],
   "insecure-registries": [
-    "{{harbor_hostname}}:{{harbor_port}}"
+    "{{image_registryDomain}}:{{image_registryPort}}"
   ],
   "runtimes": {},
   "selinux-enabled": false,
-  "graph": "{{docker_graph}}",
+  "data-root": "{{docker_graph}}",
   "exec-opts": [
     "native.cgroupdriver=systemd"
   ],

@@ -12,19 +12,32 @@
   if [ "$?" != "0" ]
   then
     docker load -i {{work_dir}}/openvpn-monitor.tgz
-    docker run -d --restart=always --name openvpn-monitor --link openvpn-ldap \
+    docker run -d --restart=always --name openvpn-monitor \
         --ulimit nofile=65536:65536 \
         -e OPENVPNMONITOR_DEFAULT_DATETIMEFORMAT="{{ OPENVPNMONITOR_DEFAULT_DATETIMEFORMAT }}" \
         -e OPENVPNMONITOR_DEFAULT_LATITUDE=-"{{ OPENVPNMONITOR_DEFAULT_LATITUDE }}" \
         -e OPENVPNMONITOR_DEFAULT_LONGITUDE="{{ OPENVPNMONITOR_DEFAULT_LONGITUDE }}" \
         -e OPENVPNMONITOR_DEFAULT_MAPS="{{ OPENVPNMONITOR_DEFAULT_MAPS }}" \
         -e OPENVPNMONITOR_DEFAULT_SITE="{{ OPENVPNMONITOR_DEFAULT_SITE }}" \
-        -e OPENVPNMONITOR_SITES_1_SHOWDISCONNECT="{{ OPENVPNMONITOR_SITES_1_SHOWDISCONNECT }}" \
-        -e OPENVPNMONITOR_SITES_1_ALIAS="{{ OPENVPNMONITOR_SITES_1_ALIAS }}" \
-        -e OPENVPNMONITOR_SITES_1_HOST="{{ OPENVPNMONITOR_SITES_1_HOST }}" \
-        -e OPENVPNMONITOR_SITES_1_NAME="{{ OPENVPNMONITOR_SITES_1_NAME }}" \
-        -e OPENVPNMONITOR_SITES_1_PORT="{{ OPENVPNMONITOR_SITES_1_PORT }}" \
-        -p "{{ OPENVPNMONITOR_PORT }}":80 \
+        -e OPENVPNMONITOR_SITES_0_SHOWDISCONNECT="{{ OPENVPNMONITOR_SITES_0_SHOWDISCONNECT }}" \
+        -e OPENVPNMONITOR_SITES_0_ALIAS="{{ OPENVPNMONITOR_SITES_0_ALIAS }}" \
+        -e OPENVPNMONITOR_SITES_0_HOST="{{ OPENVPNMONITOR_SITES_0_HOST }}" \
+        -e OPENVPNMONITOR_SITES_0_NAME="{{ OPENVPNMONITOR_SITES_0_NAME }}" \
+        -e OPENVPNMONITOR_SITES_0_PORT="{{ OPENVPNMONITOR_SITES_0_PORT }}" \
+        -e OPENVPNMONITOR_SITES_0_PASSWORD="{{OVPN_MANAGEMENT_TYPE_VALUE}}" \
+        -p "127.0.0.1:{{ OPENVPNMONITOR_PORT }}":80 \
         -v "/etc/localtime":/etc/localtime:ro \
-        c31f90ffb6fc
+        {{openvpn_monitor_image}}
+  fi
+  docker inspect openvpn-monitor-nginx >/dev/nul 2>&1
+  if [ "$?" != "0" ]
+  then
+    docker load -i {{work_dir}}/nginx.tgz
+    docker run -d --network host --restart=always --name openvpn-monitor-nginx \
+        --ulimit nofile=65536:65536 \
+        -v "/etc/localtime":/etc/localtime:ro \
+        -v {{work_dir}}/nginx.conf:/etc/nginx/nginx.conf:z \
+        -v {{work_dir}}/openvpn_monitor.conf:/etc/nginx/conf.d/default.conf:z \
+        -v {{work_dir}}/pass.db:/etc/nginx/pass.db:z \
+        {{nginx_image}}
   fi

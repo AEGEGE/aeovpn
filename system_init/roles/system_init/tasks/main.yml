@@ -1,4 +1,4 @@
-- name: prepare work's dirs
+- name: prepare some dirs
   file:
     path: "{{ item }}"
     state: directory
@@ -15,6 +15,8 @@
 
 - include_tasks: install.yml
 
-- include_tasks: ntpdate.yml
-
 - include_tasks: system.yml
+
+- include_tasks: ssh.yml
+
+- include_tasks: ntp.yml 

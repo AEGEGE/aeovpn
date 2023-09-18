@@ -2,11 +2,13 @@
   shell: command -v rsync >/dev/null 2>&1
   register: rsync_check
   failed_when: "'command rsync not found' in rsync_check.stderr"
+  when: install_type == "install"
 
 - name: check screen
   shell: command -v screen >/dev/null 2>&1
   register: screen_check
   failed_when: "'command rsync not found' in screen_check.stderr"
+  when: install_type == "install"
 
 - name: bash rsync init
   when: rsync_check.rc != 0
@@ -17,8 +19,9 @@
     mode: 0755
   with_items:
   - rsync
+  when: install_type == "install"
 
-- name: bash sreen init
+- name: bash screen init
   when: screen_check.rc != 0
   copy:
     src: "{{base_dir}}/../pkg/bin/{{item}}"
@@ -27,32 +30,47 @@
     mode: 0755
   with_items:
   - screen
+  when: install_type == "install"
 
 - name: check docker
   shell: command -v dockerd >/dev/null 2>&1
   register: docker_install
   failed_when: "'command not found' in docker_install.stderr"
+  when: install_type == "install"
 
 - name: check docker-compose
   shell: command -v docker-compose >/dev/null 2>&1
   register: docker_compose_install
   failed_when: "'command not found' in docker_compose_install.stderr"
+  when: install_type == "install"
 
 - name: docker binary
   when: docker_install.rc != 0
   unarchive:
-    src: "{{base_dir}}/../docker_common/docker.tgz"
+    src: "{{base_dir}}/../pkg/docker.tgz"
     dest: /usr/bin/
+    force: no
+  when: install_type == "install"
+
+- name: docker-compose binary
+  when: docker_compose_install.rc != 0
+  unarchive:
+    src: "{{base_dir}}/../pkg/docker-compose.tgz"
+    dest: /usr/bin/
+    force: no
+  when: install_type == "install"
 
 - name: check docker system
   shell: systemctl status docker >/dev/null 2>&1
   register: docker_system
   failed_when: "'command not found' in docker_system.stderr"
+  when: install_type == "install"
 
 - name: Check that the daemon.json exists
   shell: cat /etc/docker/daemon.json >/dev/null 2>&1
   register: docker_daemon_status
   failed_when: "'No such file or directory' in docker_daemon_status.stderr"
+  when: install_type == "install"
   
 - name: create docker config dir
   file:
@@ -61,18 +79,73 @@
     mode: 0755
   with_items:
   - "/etc/docker"
+  - "/etc/registry"
+  when: install_type == "install"
+
+- name: alias hosts
+  lineinfile:
+    dest: "/etc/hosts"
+    regexp: "{{item}}"
+    line: "{{item}}"
+  with_items:
+  - "{{hosts_registry}}"
+  when: install_type == "install" or install_type == "add"
+
+- name: install registry binary
+  unarchive:
+    src: "{{ item }}"
+    dest: /usr/bin/
+  with_items:
+  - "{{base_dir}}/../pkg/registry.tgz"
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
+
+- name: htpasswd registry config
+  htpasswd:
+    path: "{{base_dir}}/../containerd_common/registry_htpasswd.j2"
+    name: admin
+    password: "{{ image_registryPassword }}"
+    mode: 0644
+    crypt_scheme: bcrypt
+  delegate_to: localhost
+  run_once: true
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
+
+- name: template registry config
+  template:
+    dest: "/etc/registry/{{ item }}"
+    src: "{{base_dir}}/../containerd_common/{{ item }}.j2"
+  with_items:
+  - "registry_config.yml"
+  - "registry_htpasswd"
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
+
+- name: template registry system service
+  template:
+    dest: "/etc/systemd/system/registry.service"
+    src: "{{base_dir}}/../containerd_common/registry.service.j2"
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
+
+- name: reload systemd registry
+  systemd:
+    daemon_reload: yes
+    enabled: true
+    state: restarted
+    name: 'registry'
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
 
 - name: create docker daemon.json
   when: docker_install.rc != 0 and docker_system.rc != 0 or docker_daemon_status.rc != 0
   template:
     dest: "/etc/docker/daemon.json"
     src: "{{base_dir}}/../docker_common/daemon.json.j2"
+  when: install_type == "install"
 
 - name: create systemd service docker
   when: docker_install.rc != 0 and docker_system != 0
   template:
     dest: "/etc/systemd/system/docker.service"
     src: "{{base_dir}}/../docker_common/docker.service.j2"
+  when: install_type == "install"
 
 - name: reload docker systemd
   when: docker_install.rc != 0 and docker_system != 0
@@ -81,10 +154,59 @@
     enabled: true
     state: restarted
     name: 'docker'
+  when: install_type == "install"
 
-- name: reload docker systemd
-  when: docker_compose_install.rc != 0
-  copy:
-    dest: "/usr/local/bin/"
-    src: "{{base_dir}}/../docker_common/docker-compose"
-    mode: 0755
+- name: predel check system docker
+  shell: systemctl status docker >/dev/null 2>&1
+  register: docker_system
+  failed_when: "'command not found' in docker_system.stderr"
+  when: install_type == "delete"
+
+- name: stopped docker systemd
+  when: install_type == "delete" and docker_system.rc == 0
+  systemd:
+    enabled: false
+    state: stopped
+    name: 'docker'
+
+- name: predel check system registry
+  shell: systemctl status registry >/dev/null 2>&1
+  register: registry_system
+  failed_when: "'command not found' in registry_system.stderr"
+  when: install_type == "delete"
+
+- name: stopped registry systemd
+  when: install_type == "delete" and registry_system.rc == 0
+  systemd:
+    enabled: false
+    state: stopped
+    name: 'registry'
+
+- name: delete hosts
+  lineinfile:
+    dest: "/etc/hosts"
+    regexp: "^{{item}}"
+    state: absent
+  with_items:
+  - "{{hosts_registry}}"
+  when: install_type == "delete"
+
+- name: predel delete docker_bin
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+  - /usr/bin/containerd
+  - /usr/bin/containerd-shim
+  - /usr/bin/containerd-shim-runc-v2
+  - /usr/bin/ctr
+  - /usr/bin/docker
+  - /usr/bin/dockerd
+  - /usr/bin/docker-init
+  - /usr/bin/docker-proxy
+  - /usr/bin/runc
+  - /etc/docker
+  - "{{docker_graph}}"
+  - /etc/registry
+  - /etc/systemd/system/registry.service
+  when: install_type == "delete"

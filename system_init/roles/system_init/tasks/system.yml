@@ -1,6 +1,3 @@
-#- include_vars:
-#    file: sysctl_rules.yml
-
 - name: journald ForwardToSyslog set
   lineinfile:
     dest: /etc/systemd/journald.conf
@@ -8,17 +5,17 @@
     line: "SystemMaxUse=2048M"
   become: yes
 
-- name: restart journald
-  service:
-    name: systemd-journald
-    state: restarted
-  become: yes
-
 - name: rsyslogd ForwardToSyslog set
   lineinfile:
     dest: /etc/systemd/journald.conf
     regexp: "^#ForwardToSyslog=yes"
     line: "ForwardToSyslog=no"
+  become: yes
+
+- name: restart journald
+  service:
+    name: systemd-journald
+    state: restarted
   become: yes
 
 - name: copy rsyslog.service

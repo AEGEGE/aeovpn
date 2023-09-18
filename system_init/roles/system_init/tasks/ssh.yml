@@ -1,0 +1,108 @@
+- name: set selinux to disabled
+  selinux:
+    policy: targeted
+    state: disabled
+  become: yes
+  ignore_errors: yes
+  when: ansible_distribution != "Ubuntu" and ansible_distribution != "Debian"
+
+- name: Disable firewalld
+  service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  with_items:
+    - NetworkManager
+    - firewalld
+  ignore_errors: yes
+  when: ansible_distribution != "Ubuntu" and ansible_distribution != "Kylin Linux Advanced Server"
+
+- name: network on
+  shell: "/sbin/chkconfig network on"
+  when: ansible_distribution != "Ubuntu" and ansible_distribution != "Debian" and ansible_distribution != "Kylin Linux Advanced Server"
+
+- name: kylin NM calico
+  lineinfile:
+    dest: /etc/NetworkManager/NetworkManager.conf 
+    regexp: "^{{item}}"
+    line: "{{item}}"
+  with_items:
+  - "[keyfile]"
+  - "unmanaged-devices=interface-name:cali*;interface-name:tunl*;interface-name:flannel*;interface-name:culi*;interface-name:ipam*;interface-name:kube*"
+  when: ansible_distribution == "Kylin Linux Advanced Server"
+
+- name: kylin NM calico reload
+  service:
+    name: "{{ item }}"
+    state: restarted
+    enabled: true
+  with_items:
+    - NetworkManager
+  ignore_errors: yes
+  when: ansible_distribution == "Kylin Linux Advanced Server"
+
+- name: Disable ubuntu firewalld
+  service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  with_items:
+    - NetworkManager
+  ignore_errors: yes
+  when: ansible_distribution == "Ubuntu"
+
+- name: Disable ubuntu firewalld and enable network
+  shell: ufw disable
+  ignore_errors: yes
+  when: ansible_distribution == "Ubuntu"
+
+- name: UseDNS no
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^UseDNS no"
+    line: "UseDNS no"
+  become: yes
+
+- name: restart sshd
+  service:
+    name: sshd
+    state: restarted
+  become: yes
+
+- name: .bashrc alias set
+  lineinfile:
+    dest: /root/.bashrc
+    regexp: "^{{ item }}"
+    line: "{{ item }}"
+  become: yes
+  with_items:
+  - "alias egrep='egrep --color=auto'"
+  - "alias fgrep='fgrep --color=auto'"
+  - "alias grep='grep --color=auto'"
+  - "alias l.='ls -d .* --color=auto'"
+  - "alias ll='ls -l --color=auto'"
+  - "alias ls='ls --color=auto'"
+  - "alias mv='mv -i'"
+  - "alias rm='rm -i'"
+  - "alias which='alias | /usr/bin/which --tty-only --read-alias --show-dot --show-tilde'"
+  - 'export HISTTIMEFORMAT="%d/%m/%y %T "'
+  - 'export PROMPT_COMMAND="history -a; $PROMPT_COMMAND"'
+  when: ansible_distribution != "Kylin Linux Advanced Server"
+
+- name: .bashrc alias set
+  lineinfile:
+    dest: /root/.bashrc
+    regexp: "^{{ item }}"
+    line: "{{ item }}"
+  become: yes
+  with_items:
+  - "alias egrep='egrep --color=auto'"
+  - "alias fgrep='fgrep --color=auto'"
+  - "alias grep='grep --color=auto'"
+  - "alias l.='ls -d .* --color=auto'"
+  - "alias ll='ls -l --color=auto'"
+  - "alias ls='ls --color=auto'"
+  - "alias mv='mv -i'"
+  - "alias rm='rm -i'"
+  - "alias which='alias | /usr/bin/which --tty-only --read-alias --show-dot --show-tilde'"
+  when: ansible_distribution == "Kylin Linux Advanced Server"

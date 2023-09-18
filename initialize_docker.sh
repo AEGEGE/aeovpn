@@ -1,5 +1,21 @@
 #!/bin/bash
 #disable selinux
+export PATH=$PATH:/opt/docker_bin/
+
+case "$1" in
+    -h|--help|?)
+    echo "Usage: 1st arg:config name, for example:hosts"
+    echo "Usage: $0 hosts"
+    exit 0 
+;;
+esac
+
+if [ ! -n "$1" ]; then
+    echo "pls input 1st arg"
+    echo "Usage: $0 -h|--help|?"
+    exit
+fi
+
 grep "SELINUX=enforcing" /etc/selinux/config
 if [ "$?" == "0" ]
 then
@@ -9,13 +25,12 @@ fi
 
 cd `dirname $0`
 
-docker_bip=`grep docker_bip hosts |awk -F'=' '{print $2}'`
-docker_graph=`grep docker_graph hosts |awk -F'=' '{print $2}'`
-registry_mirrors=`grep registry_mirrors hosts |awk -F'=' '{print $2}'`
-default_address_pools=`grep default_address_pools hosts |awk -F'=' '{print $2}'`
-NET_MASQUERADE=`grep NET_MASQUERADE hosts |awk -F'=' '{print $2}'`
-harbor_hostname=`grep harbor_hostname hosts |awk -F'=' '{print $2}'`
-harbor_port=`grep harbor_port hosts |awk -F'=' '{print $2}'`
+docker_bip=`grep docker_bip $1 |awk -F'=' '{print $2}'`
+docker_graph=/opt/docker_bin/var/docker
+registry_mirrors=`grep registry_mirrors $1 |awk -F'=' '{print $2}'`
+default_address_pools=`grep default_address_pools $1 |awk -F'=' '{print $2}'`
+harbor_hostname=`grep image_registryDomain $1 |awk -F'=' '{print $2}'`
+harbor_port=`grep image_registryPort $1 |awk -F'=' '{print $2}'`
 
 cat > docker_common/daemon.json << EOF
 {
@@ -45,11 +60,16 @@ cat > docker_common/daemon.json << EOF
     "${registry_mirrors}"
   ],
   "insecure-registries": [
-    "${harbor_hostname}:${harbor_port}"
+    "${image_registryDomain:-bmnw.com}:${image_registryPort:-5000}"
   ],
   "runtimes": {},
   "selinux-enabled": false,
-  "graph": "${docker_graph}",
+   "hosts":[
+      "unix:///opt/docker_bin/run/docker.sock"
+    ],
+  "data-root": "${docker_graph}",
+  "pidfile": "/opt/docker_bin/docker.pid",
+  "exec-root":"/opt/docker_bin/run",
   "exec-opts": [
     "native.cgroupdriver=systemd"
   ],
@@ -60,60 +80,25 @@ cat > docker_common/daemon.json << EOF
 }
 EOF
 
-cat > docker_common/docker.service << EOF
-[Unit]
-Description=Docker Application Container Engine
-After=network.target
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-OOMScoreAdjust=-1000
-mountflags=shared
-Type=notify
-ExecStartPost=/sbin/iptables -t nat -A POSTROUTING -s ${NET_MASQUERADE} -j MASQUERADE
-ExecStart=/usr/bin/dockerd --config-file=/etc/docker/daemon.json
-ExecReload=/bin/kill -s HUP $MAINPID
-ExecStartPre=/bin/rm -f /var/run/docker.pid
-ExecStartPost=/sbin/iptables -I FORWARD -s 0.0.0.0/0 -j ACCEPT
-ExecStopPost=/sbin/iptables -t nat -D POSTROUTING -s ${NET_MASQUERADE} -j MASQUERADE
-LimitNOFILE=1048576
-LimitNPROC=1048576
-LimitCORE=infinity
-#TasksMax=infinity
-TimeoutStartSec=0
-Delegate=yes
-# kill only the docker process, not all processes in the cgroup
-KillMode=process
-# restart the docker process if it exits prematurely
-
-Restart=on-failure
-StartLimitBurst=3
-StartLimitInterval=60s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
 which docker >/dev/nul 2>&1
 if [ "$?" != "0" ]
 then
-echo "install docker binaries"
-bash docker_common/install_docker.sh
-sleep 1
+  echo "install docker binaries"
+  bash docker_common/install_docker.sh
+  sleep 1
+else
+  abaa=`ps -ef |grep /opt/docker_bin/run/containerd/containerd.toml |grep -v grep |wc -l`
+  if [ "$abaa" -eq 1 ]
+  then
+    echo "opt docker already install"
+  else   
+    bash docker_common/install_docker.sh
+  fi
 fi
 
-docker info >/dev/nul 2>&1
-if [ "$?" != "0" ]
-then
-echo start dockerd
-dockerd --iptables=false >/dev/nul 2>&1 &
-sleep 1
-fi
-
-docker inspect a83d0740a9a8 >/dev/nul 2>&1
+/opt/docker_bin/docker -H unix:///opt/docker_bin/run/docker.sock  image ls |grep ansible >/dev/nul 2>&1
 if [ "$?" != "0" ]
 then
 echo load ansible docker
-docker load -i docker_common/ansible.tar.xz
+/opt/docker_bin/docker -H unix:///opt/docker_bin/run/docker.sock load -i pkg/ansible.tar.xz
 fi
