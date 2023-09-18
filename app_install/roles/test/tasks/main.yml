@@ -1,0 +1,23 @@
+- name: prepare work dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+    owner: "root"
+    group: "root"
+  with_items:
+  - "{{ work_dir }}"
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "install" and inventory_hostname in groups['k8s-all']
+
+- name: template values.yaml
+  template:
+     dest: "{{work_dir}}/{{item}}"
+     src: "{{conf_dir}}/{{item}}.j2"
+     backup: yes
+  with_items:
+  - test.yaml
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "install"

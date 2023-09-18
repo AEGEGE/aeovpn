@@ -1,0 +1,5 @@
+server = "http://{{image_registryDomain}}:{{image_registryPort}}"
+  
+[host."http://{{image_registryDomain}}:{{image_registryPort}}"]
+  capabilities = ["pull", "resolve", "push"]
+  skip_verify = true

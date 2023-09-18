@@ -1,3 +1,87 @@
 # es
 elasticsearch_hosts_array: "{{groups['elasticsearch']|d([])}}"
 ip_aaaa: "{{(inventory_hostname)|d(.)}}"
+
+#sslkey
+sslkey_ip3: "{{groups['all']|d([])}}"
+sslkey_ip2: "{{sslkey_ip3|join(',')}}"
+
+#
+pkgsealos_images1: "{% for i in pkgsealos_images %} {{ i }}{% endfor %}"
+
+hosts_lines: |
+      {% for i in groups['k8s-all'] %}
+      "{{ i }} {{ hostvars[i].hostname }}",
+      {% endfor %}
+
+etcd_hosts_lines: |
+      {% for i in groups['etcd'] %}
+      "{{ i }} {{ hostvars[i].hostname }}",
+      {% endfor %}
+
+#  {% if hostvars[host].registry = true %}
+hosts_registry1: |-
+  {% for host in groups['all'] %}
+  {% if hostvars[host].registry|default(false) | bool %}
+  {{ host }} {{ image_registryDomain }}
+  {% endif %}
+  {% endfor %}
+
+hosts_registry: "{{ hosts_registry1 | replace('\n', '') }}"
+
+k8shosts_list: |
+      {% for i in groups['k8s-all'] %}
+      "{{ i }}",
+      {% endfor %}
+
+labels_lines: |
+      {% for host in groups['k8s-all'] %}
+      {% if hostvars[host].labels is defined %}
+      {% set list = hostvars[host].labels.split(',') %}
+      {% for i in list %}
+      "{{ hostvars[host].hostname }} {{ i }}",
+      {% endfor %}
+      {% endif %}
+      {% endfor %}
+
+ETCD_INITIAL_CLUSTER: |-
+  {% for host in groups['etcd'] %}
+  {% set hostname = hostvars[host].hostname %}
+  {{ hostname }}=https://{{ host }}:2380{% if not loop.last %},{% endif %}
+  {% endfor %}
+
+k8snode_ip_list: |-
+  {% for host in groups['k8s-node'] %}
+  {{host}}
+  {% endfor %}
+
+k8smaster_ip_list: |-
+  {% for host in groups['k8s-master']|difference([inventory_hostname]) %}
+  {{host}}
+  {% endfor %}
+
+openssl1_domain: |
+  {% for q in openssl_domain %}
+  {{q}}
+  {% endfor %}
+
+traefik_ips: |
+  {% for q in groups['k8s-all'] %}
+  {% if groups['k8s-all'] | map('extract', hostvars, ['labels']) | select('defined') | select('search', 'traefik=true') %}
+  {% if loop.first %}
+  {{q}}
+  {% endif %}
+  {% endif %}
+  {% endfor %}
+
+traefik_ip: "{{ traefik_ips | replace('\n', '') }}"
+
+#vm_storage_Count: "{{ groups['k8s-all'] | regex_search('vmmetrics=init')|length }}"
+vm_storage_Count: "{{ groups['k8s-all'] | map('extract', hostvars, ['labels']) | select('defined') | select('search', 'vmmetrics=init') | list | length }}"
+traefik_replicaCount: "{{ groups['k8s-all'] | map('extract', hostvars, ['labels']) | select('defined') | select('search', 'traefik=true') | list | length }}"
+kafka_bootstrapServers1: "{% for i in range(kafka_replicaCount) %}{{kafka_clustername}}-{{ loop.index0 }}.{{kafka_clustername}}-headless.{{ops_ns}}.svc:9092,{% endfor %}"
+kafka_bootstrapServers: "{{kafka_bootstrapServers1.rstrip(',')}}"
+filebeat_output_kafka1: "{% for i in range(kafka_replicaCount) %}'{{kafka_clustername}}-{{ loop.index0 }}.{{kafka_clustername}}-headless.{{ops_ns}}.svc:9092',{% endfor %}"
+filebeat_output_kafka: "{{filebeat_output_kafka1.rstrip(',')}}"
+output_es1: '{% for i in range(elastic_master_replicas) %}"{{elastic_clustername}}-master-{{ loop.index0 }}.{{elastic_clustername}}-master-headless.{{ops_ns}}.svc:9200",{% endfor %}'
+output_es: "{{output_es1.rstrip(',')}}"

@@ -1,0 +1,77 @@
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+# Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 10240;
+}
+
+http {
+    log_format  main  '$time_iso8601 $remote_addr - $remote_user "$request" '
+             '$status $body_bytes_sent $http_referer '
+             '$http_x_forwarded_for $upstream_addr $upstream_response_time $request_time "$http_cookie" '
+             '"$http_user_agent"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   600;
+    types_hash_max_size 2048;
+    large_client_header_buffers 4 64k;
+
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    proxy_redirect off;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    client_max_body_size 1000m;
+    client_body_buffer_size 256k;
+    proxy_connect_timeout 1800;
+    proxy_send_timeout 1800;
+    proxy_read_timeout 1800;
+    proxy_buffer_size 16k;
+    proxy_buffers 4 32k;
+    proxy_busy_buffers_size 64k;
+    proxy_temp_file_write_size 128k;
+    proxy_max_temp_file_size 256m;
+
+    gzip on;
+    gzip_min_length 1k;
+    gzip_buffers 4 16k;
+    #gzip_http_version 1.0;
+    gzip_comp_level 2;
+    #gzip_types text/plain application/x-javascript text/css application/xml text/javascript application/x-httpd-php image/jpeg image/gif image/png;
+    gzip_types text/plain application/javascript application/x-javascript text/css application/xml text/javascript application/x-httpd-php image/x-icon;
+    gzip_vary off;
+    gzip_disable "MSIE [1-6]\.";
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory.
+    # See http://nginx.org/en/docs/ngx_core_module.html#include
+    # for more information.
+    include /etc/nginx/conf.d/*.conf;
+
+    server {
+    listen 7061;
+    server_name localhost;
+
+    location /ngx_status
+    {
+        stub_status on;
+        access_log off;
+        allow 127.0.0.1;
+        allow 10.0.0.0/8;
+        allow 172.16.0.0/12;
+        allow 192.168.0.0/16;
+        deny all;
+    }
+}
+}

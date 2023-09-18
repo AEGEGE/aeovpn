@@ -1,0 +1,52 @@
+- name: Setup LVM PV VG
+  hosts: docker
+  gather_facts: True
+  vars:
+    ansible_ssh_pass: "{{server_password}}"
+    mntp: "/data"
+    vgname: "datavg"
+    pvname: "/dev/vdb"
+    lvname: "datalv"
+    vgfree: 100
+    size: "+100%FREE"
+  tasks:
+  - name: pvcreate
+    shell: "pvcreate {{pvname}}"
+    when: ansible_lvm["pvs"][pvname] is not defined
+
+  - name: Check for "{{vgname}}" VG
+    shell: "vgcreate {{vgname}} {{pvname}} && sleep 10"
+    when: ansible_lvm["vgs"][vgname] is not defined
+
+  - name: gather facts
+    setup:
+
+  - name: Check for VG Size of {{vgfree}}GiB
+    fail:
+      msg: "{{vg_free_g}} < {{vgfree}}"
+    vars:
+      vg_free_g: "{{ ansible_facts['lvm']['vgs'][vgname]['free_g'] | int }}"
+    when: vg_free_g|int < vgfree|int
+
+  - name: "check lvs"
+    shell: "lvs |grep {{vgname}}"
+    register: lvs_check
+    ignore_errors: true  
+
+  - name: "Create {{vgfree}}GiB LVM on {{vgname}} VG"
+    shell: "lvcreate -l {{size}} -n {{lvname}} {{vgname}}"
+    when: lvs_check.rc != 0
+
+  - name: Set Filesystem
+    filesystem:
+      dev: "/dev/{{vgname}}/{{lvname}}"
+      fstype: xfs
+    when: lvs_check.rc != 0
+
+  - name: Mount LV 
+    mount:
+      path: "{{mntp}}"
+      src: "/dev/{{vgname}}/{{lvname}}"
+      fstype: xfs
+      state: mounted
+    when: lvs_check.rc != 0

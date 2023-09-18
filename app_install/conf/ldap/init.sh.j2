@@ -8,7 +8,7 @@
   sleep 1
   fi
   sleep 1
-  docker inspect openldap >/dev/nul 2>&1
+  docker inspect {{service_name}} >/dev/nul 2>&1
   if [ "$?" != "0" ]
   then
     docker load -i {{work_dir}}/openldap.tgz
@@ -24,7 +24,7 @@
         -e "LDAP_BACKEND={{ LDAP_BACKEND }}" \
         -p 389:389 \
         -p 636:636 \
-        faac9bb59f83
+        {{openldap_image}}
   fi
   sleep 1
   docker inspect phpldapadmin >/dev/nul 2>&1
@@ -36,6 +36,6 @@
         -v "/etc/localtime":/etc/localtime:ro \
         -e "PHPLDAPADMIN_LDAP_HOSTS={{inventory_hostname}}" \
         -e "PHPLDAPADMIN_HTTPS=false" \
-        -p 8080:80 \
-        e340e61b03c4
+        -p {{LDAP_PHPMYADMIN}}:80 \
+        {{phpldapadmin_image}}
   fi

@@ -1,0 +1,136 @@
+- name: prepare local_work_dir dir
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+  - "{{ local_work_dir }}"
+  delegate_to: localhost
+  run_once: true
+  when: install_type == "install"
+
+- name: template openssl cnf
+  template:
+    dest: "{{local_work_dir}}/openssl.cnf"
+    src: "{{conf_dir}}/openssl.cnf.j2"
+  delegate_to: localhost
+  run_once: true
+  when: install_type == "install"
+
+- name: template rootca cnf
+  template:
+    dest: "{{local_work_dir}}/ROOT_CA.cnf"
+    src: "{{conf_dir}}/ROOT_CA.cnf.j2"
+  delegate_to: localhost
+  run_once: true
+  when: install_type == "install"
+
+- name: create ca ecc key
+  shell: "chdir={{local_work_dir}} openssl ecparam -out {{ROOT_CA_PRIVATEKEY}} -name prime256v1 -genkey"
+  delegate_to: localhost
+  run_once: true
+  when: openssl_asym == "ecparam" and install_type == "install"
+
+- name: create ca rsa key
+  shell: "chdir={{local_work_dir}} openssl genrsa -out {{ROOT_CA_PRIVATEKEY}} {{openssl_RSA}}"
+  delegate_to: localhost
+  run_once: true
+  when: not openssl_asym == "ecparam" and install_type == "install"
+
+- name: create ca csr
+  shell: 'chdir={{local_work_dir}} openssl req -new {{openssl_ea}} -key {{ROOT_CA_PRIVATEKEY}} -out {{ROOT_CA_CSR}} -subj "/C={{ openssl_C }}/ST={{ openssl_ST }}/L={{ openssl_L }}/OU=ALL/O={{ openssl_O }}/CN={{ openssl_CN }}"'
+  delegate_to: localhost
+  run_once: true
+  when: install_type == "install"
+
+- name: create ca crt
+  shell: 'chdir={{local_work_dir}} openssl x509 -req {{openssl_ea}} -days {{openssl_days}} -extfile ROOT_CA.cnf -in {{ROOT_CA_CSR}} -signkey {{ROOT_CA_PRIVATEKEY}} -out {{ROOT_CA_CERT}}'
+  delegate_to: localhost
+  run_once: true
+  when: install_type == "install"
+
+- name: create server ecc key
+  shell: "chdir={{local_work_dir}} openssl ecparam -out {{SERVER_PRIVATEKEY}} -name prime256v1 -genkey"
+  delegate_to: localhost
+  run_once: true
+  when: openssl_asym == "ecparam" and install_type == "install"
+
+- name: create server rsa key
+  shell: "chdir={{local_work_dir}} openssl genrsa -out {{SERVER_PRIVATEKEY}} {{openssl_RSA}}"
+  delegate_to: localhost
+  run_once: true
+  when: not openssl_asym == "ecparam" and install_type == "install"
+
+- name: create ca csr
+  shell: 'chdir={{local_work_dir}} openssl req -new {{openssl_ea}} -key {{SERVER_PRIVATEKEY}} -out {{SERVER_CSR}} -subj "/C={{ openssl_C }}/ST={{ openssl_ST }}/L={{ openssl_L }}/OU=ALL/O={{ openssl_O }}/CN={{openssl_CN}}"'
+  delegate_to: localhost
+  run_once: true
+  when: install_type == "install"
+
+- name: create server.crt of ca
+  shell: "chdir={{local_work_dir}} openssl x509 -req {{openssl_ea}} -days {{openssl_days}} -CAcreateserial -extfile openssl.cnf -CA {{ROOT_CA_CERT}} -CAkey {{ROOT_CA_PRIVATEKEY}} -in {{SERVER_CSR}} -out {{SERVER_CRT}}"
+  delegate_to: localhost
+  run_once: true
+  when: install_type == "install"
+
+- name: prepare some dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+    group: 1000
+    owner: 1000
+  with_items:
+  - "{{ work_dir }}"
+  when: install_type == "install"
+
+- name: sync sslkeys
+  copy:
+    dest: "{{work_dir}}/"
+    src: "{{local_work_dir}}/{{item}}"
+  with_items:
+  - "{{ROOT_CA_CERT}}"
+  - "{{SERVER_CRT}}"
+  - "{{SERVER_PRIVATEKEY}}"
+  - "{{ROOT_CA_PRIVATEKEY}}"
+  when: install_type == "install"
+
+- name: sync ca.crt system ca-trust
+  copy:
+    dest: "/etc/pki/ca-trust/source/anchors/"
+    src: "{{local_work_dir}}/{{item}}"
+  with_items:
+  - "{{ROOT_CA_CERT}}"
+  when: install_type == "install"
+
+- name: update system ca-bundle
+  shell: "update-ca-trust"
+  when: install_type == "install"
+
+- name: check kubectl
+  shell: "kubectl get no >/dev/null 2>&1"
+  register: kubectl_check
+  failed_when: "'command kubectl not found' in kubectl_check.stderr"
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "install"
+
+- name: bash k8s opt-tls
+  shell: "kubectl get ns {{ops_ns}};if [ $? -ne 0 ];then kubectl create ns {{ops_ns}};fi;kubectl create secret tls ops-tls --cert={{install_path}}/sslkey/{{SERVER_CRT}} --key={{install_path}}/sslkey/{{SERVER_PRIVATEKEY}} -n {{ops_ns}}"
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "install" and kubectl_check.rc == 0
+
+- name: clean all ca data
+  shell: "rm -rf {{ work_dir }}"
+  ignore_errors: true
+  when: install_type == "delete"
+
+- name: clean "{{ROOT_CA_CERT}}" from system
+  shell: "rm -rf /etc/pki/ca-trust/source/anchors/{{ROOT_CA_CERT}}"
+  ignore_errors: true
+  when: install_type == "delete"
+
+- name: update system ca-bundle
+  shell: "update-ca-trust"
+  when: install_type == "delete"

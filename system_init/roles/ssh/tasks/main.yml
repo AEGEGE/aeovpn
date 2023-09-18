@@ -5,6 +5,14 @@
   delegate_to: localhost
   run_once: true
 
+- name: "create .ssh dir"
+  file:
+    path: "/root/.ssh"
+    state: directory
+    mode: 0600
+  delegate_to: localhost
+  run_once: true
+
 - name: "ssh gen key"
   when: ssh_file.stat.exists == False
   shell: 'ssh-keygen -b 2048 -t rsa -q -N "" -f {{docker_basedir}}/id_rsa'
@@ -26,11 +34,3 @@
   authorized_key:
     user: "root"
     key: "{{ lookup('file', '{{ansible_ssh_private_key_file}}.pub') }}"
-
-- name: download key
-  copy:
-    src: "{{docker_basedir}}/id_rsa"
-    dest: "{{ansible_ssh_private_key_file}}"
-    mode: 0600
-  delegate_to: "{{delegate_ip}}"
-  run_once: true

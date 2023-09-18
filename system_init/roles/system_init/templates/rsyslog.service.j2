@@ -8,8 +8,7 @@ Documentation=http://www.rsyslog.com/doc/
 
 [Service]
 Type=notify
-EnvironmentFile=-/etc/sysconfig/rsyslog
-ExecStart=/usr/sbin/rsyslogd -n $SYSLOGD_OPTIONS
+ExecStart=/usr/sbin/rsyslogd -n -iNONE
 Restart=on-failure
 UMask=0066
 StandardOutput=null
@@ -17,6 +16,7 @@ Restart=on-failure
 MemoryAccounting=yes
 MemoryMax=80M
 MemoryHigh=8M
+LimitNOFILE=16384
 
 [Install]
 WantedBy=multi-user.target

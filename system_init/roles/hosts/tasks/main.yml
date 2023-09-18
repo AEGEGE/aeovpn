@@ -1,9 +1,2 @@
 - name: set hostname
-  shell: hostnamectl set-hostname {{region}}_{{organization}}_{{group_names[0]}}_{{ inventory_hostname.split('.')[2:] | join('_') }}
-
-#- name: echo hostname
-#  shell: echo {{ inventory_hostname.split('.') | join('')  }} > /tmp/aaaa.log
-#
-#- name: fffff
-#  debug:
-#    msg:"{{ inventory_hostname.split('.')[4:] }}"
+  shell: hostnamectl set-hostname {{region}}-{{organization}}-{{group_names[0]}}-{{ inventory_hostname.split('.') | join('-') }}

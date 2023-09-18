@@ -25,11 +25,16 @@
     "https://docker.mirrors.ustc.edu.cn"
   ],
   "insecure-registries": [
-    "bmsoft:5000"
+    "bmnw.com:5000"
   ],
   "runtimes": {},
   "selinux-enabled": false,
-  "graph": "/var/lib/docker",
+   "hosts":[
+      "unix:///opt/docker_bin/run/docker.sock"
+    ],
+  "data-root": "/opt/docker_bin/var/docker",
+  "pidfile": "/opt/docker_bin/docker.pid",
+  "exec-root":"/opt/docker_bin/run",
   "exec-opts": [
     "native.cgroupdriver=systemd"
   ],

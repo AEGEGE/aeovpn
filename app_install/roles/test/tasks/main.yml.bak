@@ -1,0 +1,78 @@
+- name: prepare work dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+    owner: "root"
+    group: "root"
+  with_items:
+  - "{{ work_dir }}"
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "install" and inventory_hostname in groups['k8s-all']
+
+- name: send images tar files
+  copy:
+    dest: "{{work_dir}}/{{item}}"
+    src: "{{pkg_dir}}/{{item}}"
+  with_items:
+  - "{{ kafka_image }}"
+  - "{{ kafka_ui_image }}"
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "install" and inventory_hostname in groups['k8s-all']
+
+- name: copy helm chart
+  unarchive:
+    dest: "{{work_dir}}/"
+    src: "{{pkg_dir}}/{{item}}"
+  with_items:
+  - "{{kafka_helm}}"
+  - "{{kafka_ui_helm}}"
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "install"
+
+- name: template values.yaml
+  template:
+     dest: "{{work_dir}}/elasticsearch/{{item}}"
+     src: "{{conf_dir}}/{{item}}.j2"
+     backup: yes
+  with_items:
+  - values.yaml
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "install"
+
+- name: template ui values.yaml
+  template:
+     dest: "{{work_dir}}/kibana/values.yaml"
+     src: "{{conf_dir}}/{{item}}.j2"
+     backup: yes
+  with_items:
+  - kafka_ui_values.yaml
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "install"
+
+- name: template start script
+  template:
+    dest: "{{work_dir}}/init.sh"
+    src: "{{conf_dir}}/init.sh.j2"
+    mode: 0755
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "install"
+
+- name: install software
+  shell: "bash {{work_dir}}/init.sh"
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "install"
+
+- name: uninstall software
+  shell: "helm uninstall {{kafka_clustername}} -n {{ops_ns}} && helm uninstall {{kafka_ui_clustername}} -n {{ops_ns}}"
+  ignore_errors: true
+  delegate_to: "{{delegate_ip}}"
+  run_once: true
+  when: install_type == "delete"

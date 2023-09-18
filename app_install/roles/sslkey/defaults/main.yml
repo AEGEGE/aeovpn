@@ -1,0 +1,5 @@
+service_name: sslkey
+pkg_dir: "{{base_dir}}/../pkg"
+work_dir: "{{install_path}}/{{service_name}}"
+conf_dir: "{{base_dir}}/conf/{{service_name}}"
+local_work_dir: "{{pkg_dir}}/{{service_name}}/"

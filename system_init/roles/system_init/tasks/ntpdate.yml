@@ -1,8 +1,0 @@
-- name: Set ntpdate
-  cron:
-    minute: "*/5"
-    name: "Ntpdate server for sync time"
-    backup: yes
-    job: "/usr/sbin/ntpdate {{ntp_server}}"  
-  tags:
-    - ntpdate

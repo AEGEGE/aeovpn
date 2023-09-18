@@ -1,0 +1,59 @@
+- name: check ntpdate
+  shell: command -v ntpdate >/dev/null 2>&1
+  register: ntpdate_check
+  failed_when: "'command ntpdate not found' in ntpdate_check.stderr"
+  when: use_ntpdate == "true"
+
+- name: base ntpdate
+  when: ntpdate_check.rc != 0
+  copy:
+    src: "{{base_dir}}/../pkg/bin/{{item}}"
+    dest: "/usr/sbin/{{item}}"
+    force: no
+    mode: 0755
+  with_items:
+  - ntpdate
+  when: use_ntpdate == "true"
+
+- name: update ntpdate time
+  shell: "/usr/sbin/ntpdate {{ext_ntp_server}}"
+  ignore_errors: yes
+  when: use_ntpdate == "true"
+
+- name: Set ntpdate
+  cron:
+    minute: "*/5"
+    name: "Ntpdate server for sync time"
+    backup: yes
+    job: "/usr/sbin/ntpdate {{ext_ntp_server}}"
+  tags:
+    - ntpdate
+  when: use_ntpdate == "true"
+
+- name: copy rsyslog.service
+  template:
+    src: chrony.conf.j2
+    dest: "/etc/chrony.conf"
+  when: use_ntpdate != "true"
+
+- name: alias /etc/chrony.conf
+  lineinfile:
+    dest: "/etc/chrony.conf"
+    regexp: "{{item}}"
+    line: "{{item}}"
+  with_items:
+  - "allow 0.0.0.0/0"
+  - "local stratum 10"
+  when: use_ntpdate != "true" and inventory_hostname  == "ntp_server"
+
+- name: reload chronyd systemd
+  systemd:
+    daemon_reload: yes
+    enabled: true
+    state: restarted
+    name: 'chronyd'
+  when: use_ntpdate != "true"
+
+- name: chronyd time sync
+  shell: "chronyc -a makestep"
+  when: use_ntpdate != "true"

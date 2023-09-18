@@ -1,0 +1,294 @@
+- name: check rsync
+  shell: command -v rsync >/dev/null 2>&1
+  register: rsync_check
+  failed_when: "'command rsync not found' in rsync_check.stderr"
+  when: install_type == "install" or install_type == "add"
+
+- name: check screen
+  shell: command -v screen >/dev/null 2>&1
+  register: screen_check
+  failed_when: "'command rsync not found' in screen_check.stderr"
+  when: install_type == "install" or install_type == "add"
+
+- name: bash rsync init
+  when: install_type == "install" and rsync_check.rc != 0
+  copy:
+    src: "{{base_dir}}/../pkg/bin/{{item}}"
+    dest: "/usr/bin/{{item}}"
+    force: no
+    mode: 0755
+  with_items:
+  - rsync
+
+- name: bash sreen init
+  when: install_type == "install" and screen_check.rc != 0
+  copy:
+    src: "{{base_dir}}/../pkg/bin/{{item}}"
+    dest: "/usr/bin/{{item}}"
+    force: no
+    mode: 0755
+  with_items:
+  - screen
+
+- name: check containerd
+  shell: command -v containerd >/dev/null 2>&1
+  register: containerd_install
+  failed_when: "'command not found' in containerd_install.stderr"
+  when: install_type == "install" or install_type == "add"
+
+- name: create containerd dir
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+  - "/etc/containerd"
+  - "/etc/containerd/certs.d/{{image_registryDomain}}:{{image_registryPort}}"
+  - "/opt/cni/bin"
+  - "/etc/registry"
+  when: install_type == "install" or install_type == "add"
+
+- name: alias hosts
+  lineinfile:
+    dest: "/etc/hosts"
+    regexp: "{{item}}"
+    line: "{{item}}"
+  with_items:
+  - "{{hosts_registry}}"
+  when: install_type == "install" or install_type == "add"
+
+- name: install registry binary
+  unarchive:
+    src: "{{ item }}"
+    dest: /usr/bin/
+  with_items:
+  - "{{base_dir}}/../pkg/registry.tgz"
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
+
+- name: htpasswd registry config
+  htpasswd:
+    path: "{{base_dir}}/../containerd_common/registry_htpasswd.j2"
+    name: admin
+    password: "{{ image_registryPassword }}"
+    mode: 0644
+    crypt_scheme: bcrypt 
+  delegate_to: localhost
+  run_once: true
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
+
+- name: template registry config
+  template:
+    dest: "/etc/registry/{{ item }}"
+    src: "{{base_dir}}/../containerd_common/{{ item }}.j2"
+  with_items:
+  - "registry_config.yml"
+  - "registry_htpasswd"
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
+
+- name: template registry system service
+  template:
+    dest: "/etc/systemd/system/registry.service"
+    src: "{{base_dir}}/../containerd_common/registry.service.j2"
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
+
+- name: reload systemd registry
+  systemd:
+    daemon_reload: yes
+    enabled: true
+    state: restarted
+    name: 'registry'
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
+
+- name: install binary
+  when: install_type == "install" and containerd_install.rc != 0
+  unarchive:
+    src: "{{ item }}"
+    dest: /usr/bin/
+  with_items:
+  - "{{base_dir}}/../pkg/containerd.tgz"
+  - "{{base_dir}}/../pkg/bin/nerdctl.tgz"
+  - "{{base_dir}}/../pkg/bin/crictl.tgz"
+
+- name: add binary
+  when: install_type == "add" and containerd_install.rc != 0
+  unarchive:
+    src: "{{ item }}"
+    dest: /usr/bin/
+  with_items:
+  - "{{base_dir}}/../pkg/containerd.tgz"
+  - "{{base_dir}}/../pkg/bin/nerdctl.tgz"
+  - "{{base_dir}}/../pkg/bin/crictl.tgz"
+
+- name: install cni plugins
+  when: install_type == "install" and containerd_install.rc != 0
+  unarchive:
+    src: "{{base_dir}}/../pkg/cni-plugins.tgz"
+    dest: /opt/cni/bin
+
+- name: add cni plugins
+  when: install_type == "add" and containerd_install.rc != 0
+  unarchive:
+    src: "{{base_dir}}/../pkg/cni-plugins.tgz"
+    dest: /opt/cni/bin
+
+- name: check containerd system
+  shell: systemctl status containerd >/dev/null 2>&1
+  register: containerd_system
+  failed_when: "'command not found' in containerd_system.stderr"
+  when: install_type == "install" or install_type == "add"
+
+- name: Check that config.toml exists
+  shell: cat /etc/containerd/config.toml >/dev/null 2>&1
+  register: containerd_config_status
+  failed_when: "'command not found' in containerd_system.stderr"
+  when: install_type == "install" or install_type == "add"
+
+- name: create crctl.yaml
+  when: install_type == "install" and containerd_install.rc != 0 and containerd_system.rc != 0 and containerd_config_status.rc != 0
+  template:
+    dest: "/etc/crictl.yaml"
+    src: "{{base_dir}}/../containerd_common/crictl.yaml.j2"
+
+- name: add create crctl.yaml
+  when: install_type == "add" and containerd_install.rc != 0 and containerd_system.rc != 0 and containerd_config_status.rc != 0
+  template:
+    dest: "/etc/crictl.yaml"
+    src: "{{base_dir}}/../containerd_common/crictl.yaml.j2"
+
+- name: create config.toml
+  when: install_type == "install" and containerd_install.rc != 0 and containerd_system.rc != 0 and containerd_config_status.rc != 0
+  template:
+    dest: "/etc/containerd/config.toml"
+    src: "{{base_dir}}/../containerd_common/config.toml.j2"
+
+- name: add create config.toml
+  when: install_type == "add" and containerd_install.rc != 0 and containerd_system.rc != 0 and containerd_config_status.rc != 0
+  template:
+    dest: "/etc/containerd/config.toml"
+    src: "{{base_dir}}/../containerd_common/config.toml.j2"
+
+- name: create hosts.toml
+  when: install_type == "install" and containerd_install.rc != 0 and containerd_system.rc != 0 and containerd_config_status.rc != 0
+  template:
+    dest: "/etc/containerd/certs.d/{{image_registryDomain}}:{{image_registryPort}}/hosts.toml"
+    src: "{{base_dir}}/../containerd_common/hosts.toml.j2"
+
+- name: add create hosts.toml
+  when: install_type == "add" and containerd_install.rc != 0 and containerd_system.rc != 0 and containerd_config_status.rc != 0
+  template:
+    dest: "/etc/containerd/certs.d/{{image_registryDomain}}:{{image_registryPort}}/hosts.toml"
+    src: "{{base_dir}}/../containerd_common/hosts.toml.j2"
+
+- name: create systemd service containerd
+  when: install_type == "install" and containerd_install.rc != 0 and containerd_system.rc != 0
+  template:
+    dest: "/etc/systemd/system/containerd.service"
+    src: "{{base_dir}}/../containerd_common/containerd.service.j2"
+
+- name: add create systemd service containerd
+  when: install_type == "add" and containerd_install.rc != 0 and containerd_system.rc != 0
+  template:
+    dest: "/etc/systemd/system/containerd.service"
+    src: "{{base_dir}}/../containerd_common/containerd.service.j2"
+
+- name: reload containerd systemd
+  when: install_type == "install" and containerd_install.rc != 0 and containerd_system.rc != 0
+  systemd:
+    daemon_reload: yes
+    enabled: true
+    state: restarted
+    name: 'containerd'
+
+- name: add reload containerd systemd
+  when: install_type == "add" and containerd_install.rc != 0 and containerd_system.rc != 0
+  systemd:
+    daemon_reload: yes
+    enabled: true
+    state: restarted
+    name: 'containerd'
+
+- name: copy image pause
+  copy:
+    src: "{{base_dir}}/../pkg/{{item}}"
+    dest: "/tmp/{{item}}"
+    force: no
+    mode: 0755
+  with_items:
+  - pause.tgz
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
+
+- name: push pause image
+  when: install_type == "install" and registry|default(false) | bool and registry == "true"
+  shell: "nerdctl login {{image_registryDomain}}:{{image_registryPort}} -u admin -p {{image_registryPassword}} && nerdctl -n k8s.io load -i /tmp/pause.tgz && nerdctl -n k8s.io tag k8s.gcr.io/pause:3.7 {{image_registryDomain}}:{{image_registryPort}}/pause:3.7 && nerdctl -n k8s.io push {{image_registryDomain}}:{{image_registryPort}}/pause:3.7"
+
+- name: predel check system containerd
+  shell: systemctl status containerd >/dev/null 2>&1
+  register: containerd_system
+  failed_when: "'command not found' in containerd_system.stderr"
+  when: install_type == "delete"
+
+- name: predel check system registry
+  shell: systemctl status registry >/dev/null 2>&1
+  register: registry_system
+  failed_when: "'command not found' in registry_system.stderr"
+  when: install_type == "delete"
+
+- name: stopped containerd systemd
+  when: install_type == "delete" and containerd_system.rc == 0
+  systemd:
+    enabled: false
+    state: stopped
+    name: 'containerd'
+
+- name: stopped registry systemd
+  when: install_type == "delete" and registry_system.rc == 0
+  systemd:
+    enabled: false
+    state: stopped
+    name: 'registry'
+
+- name: delete hosts
+  lineinfile:
+    dest: "/etc/hosts"
+    regexp: "^{{item}}"
+    state: absent
+  with_items:
+  - "{{hosts_registry}}"
+  when: install_type == "delete"
+
+- name: predel check umount
+  shell: df -h |grep  /run/containerd |grep -v /opt/docker_bin/run/containerd >/dev/null 2>&1
+  register: umount_system
+  failed_when: "'command not found' in umount_system.stderr"
+  when: install_type == "delete"
+
+- name: umount containerd
+  when: install_type == "delete" and umount_system.rc == 0
+  shell: umount -l `df -h |grep  /run/containerd|grep -v /opt/docker_bin/run/containerd |awk '{print $6}'`
+
+- name: predel delete containerd_bin
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+  - /usr/bin/containerd
+  - /usr/bin/containerd-shim
+  - /usr/bin/containerd-shim-runc-v2
+  - /usr/bin/ctr
+  - /usr/bin/containerd-shim-runc-v1
+  - /usr/bin/nerdctl
+  - /usr/bin/containerd-stress
+  - /usr/bin/runc
+  - /usr/bin/crictl
+  - /usr/bin/registry
+  - /etc/crictl.yaml
+  - /opt/cni
+  - /etc/registry
+  - /etc/systemd/system/registry.service
+  - /etc/containerd
+  - /etc/systemd/system/containerd.service
+  - "{{image_registrycriData}}"
+  - "{{image_registryData}}"
+  - /var/run/containerd
+  - /var/lib/nerdctl
+  when: install_type == "delete"

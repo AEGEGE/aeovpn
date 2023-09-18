@@ -1,4 +1,4 @@
-service_name: ldap
-work_dir: "/data/{{service_name}}"
+service_name: "{{name_prefix}}-ldap"
+work_dir: "{{install_path}}/{{service_name}}"
 pkg_dir: "{{base_dir}}/../pkg"
-conf_dir: "{{base_dir}}/conf/{{service_name}}"
+conf_dir: "{{base_dir}}/conf/ldap"

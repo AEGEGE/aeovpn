@@ -1,0 +1,26 @@
+#!/bin/bash
+  cd `dirname $0`
+  docker info >/dev/nul 2>&1
+  if [ "$?" != "0" ]
+  then
+    echo start dockerd
+    systemctl start docker
+  sleep 1
+  fi
+  sleep 1
+  docker inspect changepass >/dev/nul 2>&1
+  if [ "$?" != "0" ]
+  then
+    docker load -i {{work_dir}}/changepass.tgz
+    docker run -d --restart=always --name changepass \
+        --ulimit nofile=65536:65536 \
+        -e "LDAP_SERVER=ldap://{{groups['openldap'][0]}}:{{changepasstoldap_port}}" \
+        -e "LDAP_BINDDN={{ LDAP_BIND_USER_DN }}" \
+        -e "LDAP_BINDPASS={{ LDAP_BIND_USER_PASS }}" \
+        -e "LDAP_BASE_SEARCH={{LDAP_BASE_DN}}" \
+        -v "/etc/localtime":/etc/localtime:ro \
+        -v {{work_dir}}/data:/www/ssp \
+        -v {{work_dir}}/logs:/www/logs \
+        -p {{changepass_port}}:80 \
+        {{changepass_image}}
+  fi
