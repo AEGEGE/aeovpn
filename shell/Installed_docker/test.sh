@@ -47,8 +47,6 @@ esac
 
 cd `dirname $0`
 
-bash ./initialize_docker.sh $1
-
 tty >/dev/nul
 if [ "$?" -eq "0" ]
 then
@@ -59,4 +57,4 @@ fi
 
 docker_basedir=`grep "docker_basedir" $1|awk -F = '{print $2}'`
 
-/opt/docker_bin/docker -H unix:///opt/docker_bin/run/docker.sock run --network host --name ansible_${RANDOM} -e ANSIBLE_SSH_CONTROL_PATH=/dev/shm/ssh_ctl_%%h_%%p_%%r --rm -v `pwd`:$docker_basedir -w $docker_basedir -i$tty congcong126/ansible:2.9.18 ansible-playbook -f 5 --ssh-common-args="$ANSIBLE_SSH_COMMON_ARGS" -i $1 app_install/containerd.yml --extra-vars "ins=$2"
+docker run --network host --name ansible_${RANDOM} -e ANSIBLE_SSH_CONTROL_PATH=/dev/shm/ssh_ctl_%%h_%%p_%%r --rm  -v /root/.ssh:/root/.ssh -v `pwd`:$docker_basedir -w $docker_basedir -i$tty congcong126/ansible:2.9.18 ansible-playbook -f 5 --ssh-common-args="$ANSIBLE_SSH_COMMON_ARGS" -i $1 app_install/test.yml --extra-vars "ins=$2"

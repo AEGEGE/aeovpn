@@ -3,8 +3,12 @@
     path: "{{ item }}"
     state: directory
     mode: 0755
+    group: 82
+    owner: 80
   with_items:
   - "{{ work_dir }}"
+  - "{{ work_dir +'/data' }}"
+  - "{{ work_dir +'/logs' }}"
   when: install_type == "install"
 
 - name: Send image tgz
@@ -12,8 +16,7 @@
     dest: "{{work_dir}}/{{item}}"
     src: "{{pkg_dir}}/{{item}}"
   with_items:
-  - "openvpn-monitor.tgz"
-  - "nginx.tgz"
+  - "changepass.tgz"
   when: install_type == "install"
 
 - name: send start template j2
@@ -22,34 +25,12 @@
     src: "{{conf_dir}}/init.sh.j2"
   when: install_type == "install"
 
-- name: htpasswd nginx config
-  htpasswd:
-    path: "{{conf_dir}}/pass.db.j2"
-    name: admin
-    password: "{{ OPENVPN_MONITORPASS }}"
-    mode: 0644
-    crypt_scheme: bcrypt
-  delegate_to: localhost
-  run_once: true
-  when: install_type == "install"
-
-- name: send config template j2
-  template:
-    dest: "{{work_dir}}/{{item}}"
-    src: "{{conf_dir}}/{{item}}.j2"
-    mode: 0777
-  with_items:
-  - "pass.db"
-  - "openvpn_monitor.conf"
-  - "nginx.conf"
-  when: install_type == "install"
-
 - name: "start"
   shell: "bash {{work_dir}}/init.sh"
   when: install_type == "install"
 
 - name: "del container"
-  shell: "docker rm -f openvpn-monitor && docker rm -f openvpn-monitor-nginx"
+  shell: "docker rm -f {{service_name}}"
   when: install_type == "delete"
 
 - name: clean all data

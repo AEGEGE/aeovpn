@@ -1,6 +1,23 @@
-{{k8smaster_ip_list}}
+{{rocketmq_namesrv}}
+{{rocketmq_namesrv1}}
+{{ range(1, 10)|random }}
+{{controllerDLegerPeers}}
+{{namesrv_num}}
+{{minio_num1}}
+          --ulimit nofile=65536:65536 \
+          -v "/etc/localtime":/etc/localtime:ro \        
+{{ minio_data }}
+          -v a:b \
 
-{{harbor_vip | replace('\n$', '')}} hub.{{image_registryDomain}} notary.{{image_registryDomain}}
-{{ traefik_ip | replace('\n', '') }}
 
-{{ hosts_registry }}
+- name: prepare some dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+    owner: 1001
+  with_items:
+  - "{{ work_dir }}"
+  - "{{minio_http_logs_path}}"
+  - "{{ minio_data_path }}"
+  when: install_type == "install" and minio_mode == "cluster-2"

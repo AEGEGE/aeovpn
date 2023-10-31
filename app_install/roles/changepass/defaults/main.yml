@@ -1,4 +1,0 @@
-service_name: "{{name_prefix}}-changepass"
-work_dir: "{{install_path}}/{{service_name}}"
-pkg_dir: "{{base_dir}}/../pkg"
-conf_dir: "{{base_dir}}/conf/changepass"

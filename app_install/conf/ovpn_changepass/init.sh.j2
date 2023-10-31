@@ -8,19 +8,19 @@
   sleep 1
   fi
   sleep 1
-  docker inspect changepass >/dev/nul 2>&1
+  docker inspect {{service_name}} >/dev/nul 2>&1
   if [ "$?" != "0" ]
   then
     docker load -i {{work_dir}}/changepass.tgz
-    docker run -d --restart=always --name changepass \
+    docker run -d --restart=always --name {{service_name}} \
         --ulimit nofile=65536:65536 \
-        -e "LDAP_SERVER=ldap://{{groups['openldap'][0]}}:{{changepasstoldap_port}}" \
+        -e "LDAP_SERVER=ldap://{{groups['openldap'][0]}}:{{ovpn_changepasstoldap_port}}" \
         -e "LDAP_BINDDN={{ LDAP_BIND_USER_DN }}" \
         -e "LDAP_BINDPASS={{ LDAP_BIND_USER_PASS }}" \
         -e "LDAP_BASE_SEARCH={{LDAP_BASE_DN}}" \
         -v "/etc/localtime":/etc/localtime:ro \
         -v {{work_dir}}/data:/www/ssp \
         -v {{work_dir}}/logs:/www/logs \
-        -p {{changepass_port}}:80 \
-        {{changepass_image}}
+        -p {{ovpn_changepass_port}}:80 \
+        {{ovpn_changepass_image}}
   fi

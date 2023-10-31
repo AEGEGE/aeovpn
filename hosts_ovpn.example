@@ -14,7 +14,7 @@
 
 [all:vars]
 # ssh 配置
-server_password='XdgYo&aP34UY'
+server_password='123456'
 ansible_ssh_port=22
 ansible_ssh_user=root
 base_dir="{{playbook_dir}}"
@@ -29,8 +29,8 @@ ansible_ssh_pipelining=True
 
 #ntp server
 use_ntpdate=false
-ntp_server=192.168.2.65
-ext_ntp_server=time1.tencentyun.com
+ntp_server=192.168.2.66
+ext_ntp_server=ntp.aliyun.com
 
 # hostname
 region=bj
@@ -48,6 +48,10 @@ default_address_pools=11.111.100.1/20
 #默认添加的伪装地址,用于节点间通信
 NET_MASQUERADE=11.111.0.0/16
 
+#changepass
+changepass_user="root"
+changepass_password="N4YCkje24Sc^"
+
 #users
 #安装rke使用的普通用户
 customuser=ae
@@ -57,7 +61,7 @@ userpassword="youcustom"
 #私仓和containerd数据存放
 image_registryDomain="baidu.com"
 image_registryPort="5000"
-image_registryPassword=nfm88yGAtytDccw3
+image_registryPassword=nfm88yxxxXXX
 image_registrycriData=/data/containerd
 image_registryData=/data/registry
 #安装服务器地址,默认为master第一个节点,既管理与安装节点
@@ -66,14 +70,14 @@ delegate_ip="{{groups['docker'][0]}}"
 #ldap
 LDAP_ORGANISATION="who Inc."
 LDAP_DOMAIN=who.com
-LDAP_ADMIN_PASSWORD=Snc93B6sWJJt
+LDAP_ADMIN_PASSWORD=Snc93xxxXXX
 LDAP_BACKEND=mdb
 LDAP_PHPMYADMIN=19085
 phpldapadmin_image="osixia/phpldapadmin"
 openldap_image="osixia/openldap:1.3.0"
 
 #openvpn-ldap
-openvpn_image="congcong126/openvpn-ldap-otp:v1.5"
+openvpn_image="congcong126/openvpn-ldap-otp:v1.5-1"
 openldap_host={{groups['openldap'][0]}}
 OVPN_PORT=62194
 OVPN_PROTOCOL=udp
@@ -100,12 +104,12 @@ OVPN_MANAGEMENT_ENABLE="true"
 #if OVPN_MANAGEMENT_TYPE="OVPN_MANAGEMENT_NOAUTH" then set OVPN_MANAGEMENT_TYPE_VALUE="true"
 #if OVPN_MANAGEMENT_TYPE="OVPN_MANAGEMENT_PASSWORD" then set OVPN_MANAGEMENT_TYPE_VALUE="passwd"
 OVPN_MANAGEMENT_TYPE="OVPN_MANAGEMENT_PASSWORD"
-OVPN_MANAGEMENT_TYPE_VALUE="LSHfmsrqp7FYiBES"
+OVPN_MANAGEMENT_TYPE_VALUE="LSHfmsrxxxXXX"
 
-#changepass
-changepass_image="tiredofit/self-service-password:5.3.3"
-changepasstoldap_port=389
-changepass_port=19089
+#ovpn_changepass
+ovpn_changepass_image="tiredofit/self-service-password"
+ovpn_changepasstoldap_port=389
+ovpn_changepass_port=19089
 
 #openvpn-monitor
 openvpn_monitor_image="ruimarinho/openvpn-monitor"
@@ -121,7 +125,8 @@ OPENVPNMONITOR_SITES_0_HOST={{groups['openvpn'][0]}}
 OPENVPNMONITOR_SITES_0_NAME=openvpn_monitor
 OPENVPNMONITOR_SITES_0_PORT=5555
 OPENVPNMONITOR_PORT=19080
-OPENVPN_MONITORPASS=TNqfRplRDHUG
+#default user:admin
+OPENVPN_MONITORPASS=TNqfRxxxXXX
 
 #openssl
 #openssl_domain The domain name used for self-signature, multiple domain names use methods "a.com", "b.com"
