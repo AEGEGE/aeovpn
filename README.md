@@ -1,5 +1,5 @@
-## 什么是ae_install
-基于ansible playbook与docker，docker-compose开发的部署工具，支持系统版本centos 7.x，Kylin Linux Advanced Server V10 (Tercel)，UnionTech OS Server 20，cpu架构amd64和arm64，在不依赖网络，不依赖任何系统组件，默认在最小化系统下，以及无公网等环境的情况下，一键优化生产环境，批量部署以及维护2000台以内的服务器环境。并且在此基础上可以定制任意自动化运维方案。
+## 什么是aeovpn
+基于ansible playbook与docker，docker-compose开发的部署工具，支持系统版本centos 7.x，Kylin Linux Advanced Server V10 (Tercel)，UnionTech OS Server 20，cpu架构amd64和arm64，在不依赖网络，不依赖任何系统组件，默认在最小化系统下，以及无公网等环境的情况下，一键优化生产环境，批量部署服务，一键部署基于openldap+google-otp认证的openvpn，整合了phpldapadmin，openvpn监控，自行修改密码的工具
 
 ## 什么是ansible
 ansible是一种新流行的自动化运维工具，基于python2-paramiko模块开发，集合了众多运维工具（puppet、cfengine、chef、func、fabric）的优点，实现了批量系统配置、批量程序部署、批量运行命令功能。
