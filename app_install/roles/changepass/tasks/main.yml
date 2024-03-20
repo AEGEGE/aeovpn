@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 - name: prepare work's dirs
   file:
     path: "{{ item }}"
@@ -37,3 +38,9 @@
   shell: "rm -rf {{ work_dir }}"
   ignore_errors: true
   when: install_type == "delete"
+=======
+- name: change user passwd custom
+  user: name={{ item.user }} password={{ item.password | password_hash('sha512') }}  update_password=always
+  with_items:
+  - { user: '{{changepass_user}}', password: '{{changepass_password}}' }
+>>>>>>> 16b41c129fffd84faba06b2ce714072090c9ae94

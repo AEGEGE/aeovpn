@@ -1,0 +1,124 @@
+#!/bin/bash
+#init deploy
+if [ -f "install_docker.sh" ];then
+    echo "Initialization completed,quit..."
+    exit 1
+else
+    echo "Start executing initialization..."
+fi
+
+case "$1" in
+    -h|--help|?)
+    echo "Usage: 1st arg:config name, for example:hosts"
+    echo "Usage: $0 hosts"
+    exit 0 
+;;
+esac
+
+if [ ! -n "$1" ]; then
+    echo "pls input 1st arg"
+    echo "Usage: $0 -h|--help|?"
+    exit
+fi
+
+grep "SELINUX=enforcing" /etc/selinux/config
+if [ "$?" == "0" ]
+then
+sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config
+/usr/sbin/setenforce 0
+fi
+
+cd `dirname $0`
+which docker >/dev/nul 2>&1
+if [ "$?" != "0" ]
+then
+    export PATH=$PATH:/opt/docker_bin/
+    docker_bip=`grep docker_bip $1 |awk -F'=' '{print $2}'`
+    docker_graph=/opt/docker_bin/var/docker
+    registry_mirrors=`grep registry_mirrors $1 |awk -F'=' '{print $2}'`
+    default_address_pools=`grep default_address_pools $1 |awk -F'=' '{print $2}'`
+    harbor_hostname=`grep image_registryDomain $1 |awk -F'=' '{print $2}'`
+    harbor_port=`grep image_registryPort $1 |awk -F'=' '{print $2}'`
+    
+cat > docker_common/daemon.json << EOF
+{
+  "bip": "${docker_bip}",
+  "default-address-pools":
+  [
+    {"base":"${default_address_pools}","size":24}
+  ],
+  "bridge": "",
+  "debug": false,
+  "default-runtime": "runc",
+  "iptables": false,
+  "ip-forward": true,
+  "ip-masq": false,
+  "iptables": false,
+  "ipv6": false,
+  "labels": [],
+  "live-restore": true,
+  "log-driver": "json-file",
+  "log-level": "warn",
+  "log-opts": {
+    "tag": "{{.ImageName}}|{{.Name}}",
+    "max-file": "10",
+    "max-size": "200m"
+  },
+  "registry-mirrors": [
+    "${registry_mirrors}"
+  ],
+  "insecure-registries": [
+    "${image_registryDomain:-bmnw.com}:${image_registryPort:-5000}"
+  ],
+  "runtimes": {},
+  "selinux-enabled": false,
+   "hosts":[
+      "unix:///opt/docker_bin/run/docker.sock"
+    ],
+  "data-root": "${docker_graph}",
+  "pidfile": "/opt/docker_bin/docker.pid",
+  "exec-root":"/opt/docker_bin/run",
+  "exec-opts": [
+    "native.cgroupdriver=systemd"
+  ],
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ]
+}
+EOF
+    
+    which /opt/docker_bin/docker >/dev/nul 2>&1
+    if [ "$?" != "0" ]
+    then
+      echo "install docker binaries"
+      bash docker_common/install_docker.sh
+      sleep 1
+    else
+      abaa=`ps -ef |grep /opt/docker_bin/run/containerd/containerd.toml |grep -v grep |wc -l`
+      if [ "$abaa" -eq 1 ]
+      then
+        echo "opt docker already install"
+      else   
+        bash docker_common/install_docker.sh
+      fi
+    fi
+    
+    /opt/docker_bin/docker -H unix:///opt/docker_bin/run/docker.sock  image ls |grep ansible >/dev/nul 2>&1
+    if [ "$?" != "0" ]
+    then
+    echo "load ansible docker"
+    /opt/docker_bin/docker -H unix:///opt/docker_bin/run/docker.sock load -i pkg/ansible.tar.xz
+    fi
+
+    cp -r shell/no_docker/*.sh ./
+else
+    docker image ls |grep ansible >/dev/nul 2>&1
+    if [ "$?" != "0" ]
+    then
+    echo "load ansible docker"
+    docker load -i pkg/ansible.tar.xz
+    fi
+
+    cp shell/Installed_docker/*.sh ./
+fi

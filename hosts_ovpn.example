@@ -1,0 +1,150 @@
+[docker]
+192.168.2.65 registry=true
+
+[containerd]
+#192.168.2.65 registry=true
+#192.168.2.66
+#192.168.2.67
+
+[openldap]
+192.168.2.65
+
+[openvpn]
+192.168.2.65
+
+[all:vars]
+# ssh 配置
+server_password='123456'
+ansible_ssh_port=22
+ansible_ssh_user=root
+base_dir="{{playbook_dir}}"
+ansible_ssh_private_key_file=/root/.ssh/id_rsa
+docker_basedir=/ae
+
+name_prefix="ovpn"
+install_path="/data/{{name_prefix}}"
+push_ssh_key=True
+ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
+ansible_ssh_pipelining=True
+
+#ntp server
+use_ntpdate=false
+ntp_server=192.168.2.66
+ext_ntp_server=ntp.aliyun.com
+
+# hostname
+region=bj
+organization=who
+
+#install_docker
+#docker的家目录
+docker_graph=/data/docker
+#docker默认使用的ip池
+docker_bip=11.111.0.1/24
+#docker使用的镜像仓库地址
+registry_mirrors=https://docker.mirrors.ustc.edu.cn
+#docker-compose的地址池
+default_address_pools=11.111.100.1/20
+#默认添加的伪装地址,用于节点间通信
+NET_MASQUERADE=11.111.0.0/16
+
+#changepass
+changepass_user="root"
+changepass_password="N4YCkje24Sc^"
+
+#users
+#安装rke使用的普通用户
+customuser=ae
+#安装rke使用的普通用户密码
+userpassword="youcustom"
+
+#私仓和containerd数据存放
+image_registryDomain="baidu.com"
+image_registryPort="5000"
+image_registryPassword=nfm88yxxxXXX
+image_registrycriData=/data/containerd
+image_registryData=/data/registry
+#安装服务器地址,默认为master第一个节点,既管理与安装节点
+delegate_ip="{{groups['docker'][0]}}"
+
+#ldap
+LDAP_ORGANISATION="who Inc."
+LDAP_DOMAIN=who.com
+LDAP_ADMIN_PASSWORD=Snc93xxxXXX
+LDAP_BACKEND=mdb
+LDAP_PHPMYADMIN=19085
+phpldapadmin_image="osixia/phpldapadmin"
+openldap_image="osixia/openldap:1.3.0"
+
+#openvpn-ldap
+openvpn_image="congcong126/openvpn-ldap-otp:v1.5-1"
+openldap_host={{groups['openldap'][0]}}
+OVPN_PORT=62194
+OVPN_PROTOCOL=udp
+#NAT OR ROUTE
+#true is NAT
+#false is ROUTE
+OVPN_NAT=false
+#Set OVPN_SERVER_CN as the access address
+#such as domain or ip
+OVPN_SERVER_CN="openvpn.{{LDAP_DOMAIN}}"
+OVPN_NETWORK="11.10.0.0 255.255.0.0"
+OVPN_ROUTES="172.25.68.0 255.255.255.0"
+LDAP_URI=ldap://{{ openldap_host }}
+LDAP_BASE_DN="ou=users,dc=who,dc=com"
+LDAP_BIND_USER_DN="cn=admin,dc=who,dc=com"
+LDAP_BIND_USER_PASS={{ LDAP_ADMIN_PASSWORD }}
+LDAP_FILTER="(objectClass=inetOrgPerson)"
+OVPN_DNS_SERVERS=223.5.5.5
+OVPN_ENABLE_COMPRESSION=false
+OVPN_REGISTER_DNS=false
+ENABLE_OTP=true
+OVPN_MANAGEMENT_ENABLE="true"
+#OVPN_MANAGEMENT_TYPE="OVPN_MANAGEMENT_NOAUTH|OVPN_MANAGEMENT_PASSWORD"
+#if OVPN_MANAGEMENT_TYPE="OVPN_MANAGEMENT_NOAUTH" then set OVPN_MANAGEMENT_TYPE_VALUE="true"
+#if OVPN_MANAGEMENT_TYPE="OVPN_MANAGEMENT_PASSWORD" then set OVPN_MANAGEMENT_TYPE_VALUE="passwd"
+OVPN_MANAGEMENT_TYPE="OVPN_MANAGEMENT_PASSWORD"
+OVPN_MANAGEMENT_TYPE_VALUE="LSHfmsrxxxXXX"
+
+#ovpn_changepass
+ovpn_changepass_image="tiredofit/self-service-password"
+ovpn_changepasstoldap_port=389
+ovpn_changepass_port=19089
+
+#openvpn-monitor
+openvpn_monitor_image="ruimarinho/openvpn-monitor"
+nginx_image="nginx:alpine"
+OPENVPNMONITOR_DEFAULT_DATETIMEFORMAT="%%d/%%m/%%Y"
+OPENVPNMONITOR_DEFAULT_LATITUDE=40
+OPENVPNMONITOR_DEFAULT_LONGITUDE=116
+OPENVPNMONITOR_DEFAULT_MAPS=true
+OPENVPNMONITOR_DEFAULT_SITE=prod
+OPENVPNMONITOR_SITES_0_SHOWDISCONNECT=true
+OPENVPNMONITOR_SITES_0_ALIAS=TCP
+OPENVPNMONITOR_SITES_0_HOST={{groups['openvpn'][0]}}
+OPENVPNMONITOR_SITES_0_NAME=openvpn_monitor
+OPENVPNMONITOR_SITES_0_PORT=5555
+OPENVPNMONITOR_PORT=19080
+#default user:admin
+OPENVPN_MONITORPASS=TNqfRxxxXXX
+
+#openssl
+#openssl_domain The domain name used for self-signature, multiple domain names use methods "a.com", "b.com"
+#The self-signed certificate ip will be obtained according to the group list in hosts
+openssl_C=CN
+openssl_ST=BJ
+openssl_L=BJ
+openssl_O=k8s
+openssl_OU=k8s
+openssl_CN="K8S ONLY CA"
+openssl_domain="{{image_registryDomain}}","*.{{image_registryDomain}}"
+openssl_days=36500
+openssl_RSA=2048
+openssl_ea="-sha256"
+openssl_asym="rsa"
+ROOT_CA_PRIVATEKEY=CA_PRIVATEKEY.key
+ROOT_CA_CSR=CA_CSR.csr
+ROOT_CA_CERT=CA_CERT.crt
+SERVER_PRIVATEKEY=k8s_server.key
+SERVER_CSR=k8s_server.csr
+SERVER_CRT=k8s_server.crt

@@ -9,7 +9,11 @@
   - "{{ work_dir }}"
   delegate_to: "{{delegate_ip}}"
   run_once: true
+<<<<<<< HEAD
   when: install_type == "install" and inventory_hostname in groups['k8s-all']
+=======
+  when: install_type == "install"
+>>>>>>> 16b41c129fffd84faba06b2ce714072090c9ae94
 
 - name: template values.yaml
   template:

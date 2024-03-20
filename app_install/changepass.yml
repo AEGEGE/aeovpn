@@ -1,7 +1,14 @@
+<<<<<<< HEAD
 - hosts: openvpn
   gather_facts: yes
   vars:
     ansible_ssh_pass: "{{server_password}}"
     install_type: "{{ ins }}"
+=======
+- hosts: all
+  gather_facts: yes
+  vars:
+    ansible_ssh_pass: "{{server_password}}"
+>>>>>>> 16b41c129fffd84faba06b2ce714072090c9ae94
   roles:
   - changepass
