@@ -1,0 +1,93 @@
+version: '2'
+
+services:
+  openldap:
+    image: osixia/openldap:1.3.0
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    ports:
+      - 389:389
+      - 636:636
+    restart: always
+    volumes:
+      - ./ldap/ldap:/var/lib/ldap:rw
+      - ./ldap/slapd.d:/etc/ldap/slapd.d:rw
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - "LDAP_LOG_LEVEL=256"
+      - "LDAP_ORGANISATION=Who Inc."
+      - "LDAP_DOMAIN=who.com"
+      - "LDAP_ADMIN_PASSWORD=Snc93xxxXXX"
+      - "LDAP_BACKEND=mdb"
+  
+  ldapadmin:
+    image: osixia/phpldapadmin
+    ports:
+      - 18081:80
+    links:
+      - openldap
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - "PHPLDAPADMIN_LDAP_HOSTS=openldap"
+      - "PHPLDAPADMIN_HTTPS=false"
+    restart: always
+
+  openvpn:
+    image: congcong126/openvpn-ldap-otp:v1.5-1
+    ports:
+      - "63194:63194/udp"
+    links:
+      - openldap
+    cap_add:
+      - NET_ADMIN
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    volumes:
+      - ./openvpn:/etc/openvpn
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - "OVPN_PORT=63194"
+      - "OVPN_PROTOCOL=udp"
+      - "OVPN_NAT=true"
+      - "OVPN_SERVER_CN=openvpn.who.com"
+      - "OVPN_NETWORK=11.200.0.0 255.255.0.0"
+      - "LDAP_URI=ldap://openldap"
+      - "LDAP_BASE_DN=ou=users,dc=who,dc=com"
+      - "LDAP_BIND_USER_DN=cn=admin,dc=who,dc=com"
+      - "LDAP_BIND_USER_PASS=Snc93xxxXXX"
+      - "LDAP_FILTER=(objectClass=inetOrgPerson)"
+      - "OVPN_DNS_SERVERS=8.8.8.8"
+      - "OVPN_REGISTER_DNS=false"
+      - "OVPN_ENABLE_COMPRESSION=false"
+      - "ENABLE_OTP=false"
+      - "OVPN_MANAGEMENT_ENABLE=true"
+      - "OVPN_MANAGEMENT_NOAUTH=false"
+      - "OVPN_MANAGEMENT_PASSWORD=LSHfmsrxxxXXX"
+    restart: always
+  
+  ovpn-monitor:
+    image: ruimarinho/openvpn-monitor
+    ports:
+      - 19080:80
+    links:
+      - openvpn
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - "OPENVPNMONITOR_DEFAULT_DATETIMEFORMAT=%%d/%%m/%%Y"
+      - "OPENVPNMONITOR_DEFAULT_LATITUDE=-40"
+      - "OPENVPNMONITOR_DEFAULT_LONGITUDE=116"
+      - "OPENVPNMONITOR_DEFAULT_MAPS=true"
+      - "OPENVPNMONITOR_DEFAULT_SITE=prod"
+      - "OPENVPNMONITOR_SITES_0_SHOWDISCONNECT=true"
+      - "OPENVPNMONITOR_SITES_0_ALIAS=TCP"
+      - "OPENVPNMONITOR_SITES_0_HOST=openvpn"
+      - "OPENVPNMONITOR_SITES_0_NAME=openvpn_monitor"
+      - "OPENVPNMONITOR_SITES_0_PORT=5555"
+      - "OPENVPNMONITOR_SITES_0_PASSWORD=LSHfmsrxxxXXX"
+    restart: always

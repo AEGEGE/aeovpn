@@ -24,7 +24,9 @@
         -e OPENVPNMONITOR_SITES_0_HOST="{{ OPENVPNMONITOR_SITES_0_HOST }}" \
         -e OPENVPNMONITOR_SITES_0_NAME="{{ OPENVPNMONITOR_SITES_0_NAME }}" \
         -e OPENVPNMONITOR_SITES_0_PORT="{{ OPENVPNMONITOR_SITES_0_PORT }}" \
-        -e OPENVPNMONITOR_SITES_0_PASSWORD="{{OVPN_MANAGEMENT_TYPE_VALUE}}" \
+{% if OVPN_MANAGEMENT_NOAUTH != "true" %}
+        -e OPENVPNMONITOR_SITES_0_PASSWORD="{{ OVPN_MANAGEMENT_PASSWORD }}" \
+{% endif %}        
         -p "127.0.0.1:{{ OPENVPNMONITOR_PORT }}":80 \
         -v "/etc/localtime":/etc/localtime:ro \
         {{openvpn_monitor_image}}
