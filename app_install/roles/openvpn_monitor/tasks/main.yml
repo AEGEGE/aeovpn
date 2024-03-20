@@ -37,10 +37,7 @@
   template:
     dest: "{{work_dir}}/{{item}}"
     src: "{{conf_dir}}/{{item}}.j2"
-<<<<<<< HEAD
-=======
     mode: 0777
->>>>>>> 16b41c129fffd84faba06b2ce714072090c9ae94
   with_items:
   - "pass.db"
   - "openvpn_monitor.conf"
@@ -52,7 +49,7 @@
   when: install_type == "install"
 
 - name: "del container"
-  shell: "docker rm -f openvpn-monitor && docker rm -f openvpn-monitor-nginx"
+  shell: "docker rm -f {{service_name}} && docker rm -f {{service_name}}-nginx"
   when: install_type == "delete"
 
 - name: clean all data

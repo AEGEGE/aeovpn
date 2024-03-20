@@ -9,6 +9,7 @@
   - "{{ work_dir }}"
   - "{{ work_dir +'/ldap' }}"
   - "{{ work_dir +'/slapd.d' }}"
+  when: install_type == "install"
 
 - name: Send and unzip tgz
   copy:
@@ -17,11 +18,23 @@
   with_items:
   - "openldap.tgz"
   - "phpldapadmin.tgz"
+  when: install_type == "install"
 
 - name: send start template j2
   template:
     dest: "{{work_dir}}/init.sh"
     src: "{{conf_dir}}/init.sh.j2"
+  when: install_type == "install"
 
 - name: "start"
   shell: "bash {{work_dir}}/init.sh"
+  when: install_type == "install"
+
+- name: "del container"
+  shell: "docker rm -f {{service_name}} && docker rm -f {{service_name}}admin"
+  when: install_type == "delete"
+
+- name: clean all data
+  shell: "rm -rf {{ work_dir }}"
+  ignore_errors: true
+  when: install_type == "delete"

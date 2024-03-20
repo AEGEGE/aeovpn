@@ -8,29 +8,55 @@
   sleep 1
   fi
   sleep 1
-  docker inspect openvpn-ldap >/dev/nul 2>&1
+  docker inspect {{service_name}} >/dev/nul 2>&1
   if [ "$?" != "0" ]
   then
     docker load -i {{work_dir}}/openvpn-ldap.tgz
-    docker run --network host -d --restart=always --name openvpn-ldap \
-        --ulimit nofile=65536:65536 \
-        -e OVPN_PORT="{{OVPN_PORT}}" \
-        -e OVPN_PROTOCOL="{{ OVPN_PROTOCOL }}" \
-        -e OVPN_NAT="{{ OVPN_NAT }}" \
-        -e OVPN_SERVER_CN="{{ OVPN_SERVER_CN }}" \
-        -e OVPN_NETWORK="{{ OVPN_NETWORK }}" \
-        -e OVPN_ROUTES="{{ OVPN_ROUTES }}" \
-        -e LDAP_URI="{{ LDAP_URI }}" \
-        -e LDAP_BASE_DN="{{ LDAP_BASE_DN }}" \
-        --cap-add=NET_ADMIN \
-        -e LDAP_BIND_USER_DN="{{ LDAP_BIND_USER_DN }}" \
-        -e LDAP_BIND_USER_PASS="{{ LDAP_BIND_USER_PASS }}" \
-        -e LDAP_FILTER="{{ LDAP_FILTER }}" \
-        -e OVPN_ENABLE_COMPRESSION="{{ OVPN_ENABLE_COMPRESSION }}" \
-        -e ENABLE_OTP="{{ ENABLE_OTP }}" \
-        -e OVPN_MANAGEMENT_ENABLE="{{ OVPN_MANAGEMENT_ENABLE }}" \
-        -e {{ OVPN_MANAGEMENT_TYPE }}="{{ OVPN_MANAGEMENT_TYPE_VALUE }}" \
-        -v /etc/localtime:/etc/localtime:ro \
-        -v {{work_dir}}:/etc/openvpn \
-        {{openvpn_image}}
+      if [ "{{OVPN_NAT}}" != "true" ]
+      then
+        docker run --network host -d --restart=always --name {{service_name}} \
+            --ulimit nofile=65536:65536 \
+            -e OVPN_PORT="{{OVPN_PORT}}" \
+            -e OVPN_PROTOCOL="{{ OVPN_PROTOCOL }}" \
+            -e OVPN_NAT="{{ OVPN_NAT }}" \
+            -e OVPN_SERVER_CN="{{ OVPN_SERVER_CN }}" \
+            -e OVPN_NETWORK="{{ OVPN_NETWORK }}" \
+            -e OVPN_ROUTES="{{ OVPN_ROUTES }}" \
+            -e LDAP_URI="{{ LDAP_URI }}" \
+            -e LDAP_BASE_DN="{{ LDAP_BASE_DN }}" \
+            --cap-add=NET_ADMIN \
+            -e LDAP_BIND_USER_DN="{{ LDAP_BIND_USER_DN }}" \
+            -e LDAP_BIND_USER_PASS="{{ LDAP_BIND_USER_PASS }}" \
+            -e LDAP_FILTER="{{ LDAP_FILTER }}" \
+            -e OVPN_ENABLE_COMPRESSION="{{ OVPN_ENABLE_COMPRESSION }}" \
+            -e ENABLE_OTP="{{ ENABLE_OTP }}" \
+            -e OVPN_MANAGEMENT_ENABLE="{{ OVPN_MANAGEMENT_ENABLE }}" \
+            -e {{ OVPN_MANAGEMENT_TYPE }}="{{ OVPN_MANAGEMENT_TYPE_VALUE }}" \
+            -v /etc/localtime:/etc/localtime:ro \
+            -v {{work_dir}}:/etc/openvpn \
+            {{openvpn_image}}
+      else
+        docker run --network host -d --restart=always --name {{service_name}} \
+          --ulimit nofile=65536:65536 \
+          -e OVPN_PORT="{{OVPN_PORT}}" \
+          -e OVPN_PROTOCOL="{{ OVPN_PROTOCOL }}" \
+          -e OVPN_NAT="{{ OVPN_NAT }}" \
+          -e OVPN_SERVER_CN="{{ OVPN_SERVER_CN }}" \
+          -e OVPN_NETWORK="{{ OVPN_NETWORK }}" \
+          -e OVPN_DNS_SERVERS="{{ OVPN_DNS_SERVERS }}" \
+          -e OVPN_REGISTER_DNS="{{ OVPN_REGISTER_DNS }}" \
+          -e LDAP_URI="{{ LDAP_URI }}" \
+          -e LDAP_BASE_DN="{{ LDAP_BASE_DN }}" \
+          --cap-add=NET_ADMIN \
+          -e LDAP_BIND_USER_DN="{{ LDAP_BIND_USER_DN }}" \
+          -e LDAP_BIND_USER_PASS="{{ LDAP_BIND_USER_PASS }}" \
+          -e LDAP_FILTER="{{ LDAP_FILTER }}" \
+          -e OVPN_ENABLE_COMPRESSION="{{ OVPN_ENABLE_COMPRESSION }}" \
+          -e ENABLE_OTP="{{ ENABLE_OTP }}" \
+          -e OVPN_MANAGEMENT_ENABLE="{{ OVPN_MANAGEMENT_ENABLE }}" \
+          -e {{ OVPN_MANAGEMENT_TYPE }}="{{ OVPN_MANAGEMENT_TYPE_VALUE }}" \
+          -v /etc/localtime:/etc/localtime:ro \
+          -v {{work_dir}}:/etc/openvpn \
+          {{openvpn_image}}
+      fi
   fi

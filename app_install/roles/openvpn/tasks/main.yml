@@ -26,7 +26,7 @@
   when: install_type == "install"
 
 - name: "del container"
-  shell: "docker rm -f openvpn-ldap"
+  shell: "docker rm -f {{service_name}}"
   when: install_type == "delete"
 
 - name: clean all data

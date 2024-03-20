@@ -12,7 +12,7 @@
   if [ "$?" != "0" ]
   then
     docker load -i {{work_dir}}/openldap.tgz
-    docker run -d --restart=always --name openldap \
+    docker run -d --restart=always --name {{service_name}} \
         --ulimit nofile=65536:65536 \
         -v "/etc/localtime":/etc/localtime:ro \
         -v "{{ work_dir }}/ldap":/var/lib/ldap:rw \
@@ -27,11 +27,11 @@
         {{openldap_image}}
   fi
   sleep 1
-  docker inspect phpldapadmin >/dev/nul 2>&1
+  docker inspect {{service_name}}admin >/dev/nul 2>&1
   if [ "$?" != "0" ]
   then
     docker load -i {{work_dir}}/phpldapadmin.tgz
-    docker run -d --restart=always --name phpldapadmin \
+    docker run -d --restart=always --name {{service_name}}admin \
         --ulimit nofile=65536:65536 \
         -v "/etc/localtime":/etc/localtime:ro \
         -e "PHPLDAPADMIN_LDAP_HOSTS={{inventory_hostname}}" \
