@@ -270,4 +270,7 @@ sh ovpn_changepass.sh hosts install
 docker exec -it ovpn-openvpn add-otp-user1 xxxx UTF8 > xxxx.txt
 #生成客户端配置文件
 docker exec -it ovpn-openvpn show-client-config
+#首次使用需在ldap中创建组与用户
+#组ObjectClass:Organisational Unit
+#用户ObjectClass:inetOrgPerson,用户必须包含uid(Specify attributes),password,其他根据自己爱好加即可.
 ```
