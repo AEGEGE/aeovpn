@@ -20,3 +20,4 @@
 - include_tasks: ssh.yml
 
 - include_tasks: ntp.yml 
+#- include_tasks: ntp1.yml

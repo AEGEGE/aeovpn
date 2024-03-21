@@ -13,14 +13,20 @@
 192.168.2.65
 
 [all:vars]
+#安装服务器地址,默认为master第一个节点,既管理与安装节点
+delegate_ip="{{groups['docker'][0]}}"
 # ssh 配置
 server_password='123456'
 ansible_ssh_port=22
 ansible_ssh_user=root
+# sudo pass
+#ansible_become=yes
+#ansible_become_method=sudo
+#ansible_sudo_pass='123456'
+# dir set
 base_dir="{{playbook_dir}}"
 ansible_ssh_private_key_file=/root/.ssh/id_rsa
 docker_basedir=/ae
-
 name_prefix="ovpn"
 install_path="/data/{{name_prefix}}"
 push_ssh_key=True
@@ -64,8 +70,6 @@ image_registryPort="5000"
 image_registryPassword=nfm88yxxxXXX
 image_registrycriData=/data/containerd
 image_registryData=/data/registry
-#安装服务器地址,默认为master第一个节点,既管理与安装节点
-delegate_ip="{{groups['docker'][0]}}"
 
 #ldap
 LDAP_ORGANISATION="who Inc."

@@ -59,7 +59,7 @@
   - {name: net.bridge.bridge-nf-call-ip6tables, value: 1}
   - {name: net.bridge.bridge-nf-call-iptables, value: 1}
   - {name: net.ipv4.ip_forward, value: 1}
-  - {name: net.ipv4.ip_local_port_range, value: 1024 65535}
+  - {name: net.ipv4.ip_local_port_range, value: 10000 65535}
   - {name: net.ipv4.ip_local_reserved_ports, value: 30000-32767}
   - {name: kernel.shmall, value: 4294967296}
   - {name: net.ipv4.tcp_fin_timeout, value: 30}

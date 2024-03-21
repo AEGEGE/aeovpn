@@ -22,10 +22,12 @@ if [ ! -n "$1" ]; then
 fi
 
 grep "SELINUX=enforcing" /etc/selinux/config
-if [ "$?" == "0" ]
+if [ "$?" -eq "0" ]
 then
 sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config
 /usr/sbin/setenforce 0
+else
+echo SELINUX=disabled >> /etc/selinux/config
 fi
 
 cd `dirname $0`

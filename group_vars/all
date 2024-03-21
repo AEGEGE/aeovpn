@@ -6,8 +6,6 @@ ip_aaaa: "{{(inventory_hostname)|d(.)}}"
 sslkey_ip3: "{{groups['all']|d([])}}"
 sslkey_ip2: "{{sslkey_ip3|join(',')}}"
 
-<<<<<<< HEAD
-=======
 # mongodb
 mongo_hosts_array: "{{groups['mongodb']}}"
 mongo_nodes: "{{mongo_hosts_array | map('regex_replace', '^(.*)$', '\\1:'+mongo_port|string)|list}}"
@@ -39,7 +37,6 @@ minio_data_path: "{{ minio_data_path1.rstrip() }}"
 nacos_hosts_array: "{{groups['nacos']|d([])}}"
 nacos_cluster_servers: '{% for h in nacos_hosts_array %}{% if loop.index0>0 %} {% endif %}{{h}}:{{NACOS_APPLICATION_PORT}}{% endfor %}'
 
->>>>>>> 16b41c129fffd84faba06b2ce714072090c9ae94
 #
 pkgsealos_images1: "{% for i in pkgsealos_images %} {{ i }}{% endfor %}"
 
@@ -110,8 +107,6 @@ traefik_ips: |
 
 traefik_ip: "{{ traefik_ips | replace('\n', '') }}"
 
-<<<<<<< HEAD
-=======
 rocketmq_namesrv1: "{{groups['rocketmq']|d([])}}"
 rocketmq_namesrv: '{% for i in rocketmq_namesrv1 %}{% if "namesrv" in hostvars[i].rkrole %}{% if loop.index0>0 %};{% endif %}{{i}}:9876{% endif %}{% endfor %}'
 #controllerDLegerPeers: '{% for i in rocketmq_namesrv1 %}{% if "namesrv" in hostvars[i].rkrole %}{% if loop.index0>0 %};{% endif %}n{{ loop.index - 1 }}-{{i}}:9877{% endif %}{% endfor %}'
@@ -119,7 +114,6 @@ controllerDLegerPeers: '{% for i in rocketmq_namesrv1 %}{% if "namesrv" in hostv
 controllerAddr: '{% for i in rocketmq_namesrv1 %}{% if "namesrv" in hostvars[i].rkrole %}{% if loop.index0>0 %};{% endif %}{{i}}:9877{% endif %}{% endfor %}'
 namesrv_num: "{{ groups['rocketmq'] | map('extract', hostvars, ['rkrole']) | select('defined') | select('search', 'namesrv') | list | length }}"
 
->>>>>>> 16b41c129fffd84faba06b2ce714072090c9ae94
 #vm_storage_Count: "{{ groups['k8s-all'] | regex_search('vmmetrics=init')|length }}"
 vm_storage_Count: "{{ groups['k8s-all'] | map('extract', hostvars, ['labels']) | select('defined') | select('search', 'vmmetrics=init') | list | length }}"
 traefik_replicaCount: "{{ groups['k8s-all'] | map('extract', hostvars, ['labels']) | select('defined') | select('search', 'traefik=true') | list | length }}"

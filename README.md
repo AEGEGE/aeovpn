@@ -267,5 +267,7 @@ sh ovpn_changepass.sh hosts install
 ### 镜像改动相关
 ```
 #openvpn-ldap-otp镜像进行了简单修改,新增即使openvpn不是全局代理也可以访问内网其他网段，会根据route段生成iptables伪装，可以生成utf8格式的google验证码，供线下传输
-docker exec -it openvpn-ldap add-otp-user1 xxxx UTF8 > xxxx.txt
+docker exec -it ovpn-openvpn add-otp-user1 xxxx UTF8 > xxxx.txt
+#生成客户端配置文件
+docker exec -it ovpn-openvpn show-client-config
 ```

@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-- hosts: k8s-master:k8s-node
-=======
 - hosts: test
->>>>>>> 16b41c129fffd84faba06b2ce714072090c9ae94
   gather_facts: no
   vars:
     ansible_ssh_pass: "{{server_password}}"

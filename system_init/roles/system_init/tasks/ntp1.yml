@@ -1,0 +1,29 @@
+- name: copy chrony.conf
+  template:
+    src: chrony.conf.j2
+    dest: "/etc/chrony.conf"
+  when: use_ntpdate != "true"
+
+- name: alias /etc/chrony.conf
+  lineinfile:
+    dest: "/etc/chrony.conf"
+    regexp: "{{item}}"
+    line: "{{item}}"
+  with_items:
+  - "allow 0.0.0.0/0"
+  - "local stratum 10"
+  when: use_ntpdate != "true" and inventory_hostname == ntp_server
+
+- name: change ntp_server /etc/chrony.conf
+  lineinfile:
+    dest: "/etc/chrony.conf"
+    regexp: "server {{ntp_server}} iburst"
+    line: "#server {{ntp_server}} iburst"
+  when: use_ntpdate != "true" and inventory_hostname == ntp_server
+
+- name: change not ntp_server /etc/chrony.conf
+  lineinfile:
+    dest: "/etc/chrony.conf"
+    regexp: "server {{ext_ntp_server}} iburst"
+    line: "#server {{ext_ntp_server}} iburst"
+  when: use_ntpdate != "true" and inventory_hostname != ntp_server
